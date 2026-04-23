@@ -1,0 +1,9 @@
+# ─────────────────────────────────────────────────────
+# BAH Eczane — Install Klasörü Güvenlik Kuralları
+# ─────────────────────────────────────────────────────
+
+# Kurulum sırasında sadece install.php, install_ui.php ve update.php erişilebilir
+<FilesMatch "^(?!install\.php|install_ui\.php|update\.php$)">
+    Order deny,allow
+    Deny from all
+</FilesMatch>

@@ -1,0 +1,6 @@
+# BAH Eczane - Ana dizin yönlendirme
+Options -Indexes
+
+# Yükleme yapılmamışsa install'a yönlendir (public/index.php içinde de kontrol var)
+# RewriteEngine On
+# RewriteRule ^$ install/install.php [R=302,L]

@@ -1,0 +1,647 @@
+/* ================================================
+   BAH Eczane - Ana Stil Dosyası
+   Tasarım: Koyu tema + glassmorphism aksan
+================================================ */
+
+/* -----------------------------------------------
+   1. CSS Değişkenleri & Reset
+----------------------------------------------- */
+:root {
+    --sidebar-bg: #0d1b2a;
+    --sidebar-width: 260px;
+    --topbar-height: 60px;
+    --accent: #0ea5e9;
+    --accent-hover: #0284c7;
+    --accent-soft: rgba(14, 165, 233, 0.12);
+    --body-bg: #0f1e2d;
+    --card-bg: #162333;
+    --card-border: rgba(255, 255, 255, 0.07);
+    --text-primary: #e2e8f0;
+    --text-muted: #64748b;
+    --success: #22c55e;
+    --danger: #ef4444;
+    --warning: #f59e0b;
+    --font: 'Inter', -apple-system, sans-serif;
+    --radius: 12px;
+    --transition: 0.22s ease;
+}
+
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    font-family: var(--font);
+    background: var(--body-bg);
+    color: var(--text-primary);
+    font-size: 14px;
+    line-height: 1.6;
+}
+
+/* -----------------------------------------------
+   2. Layout Wrapper
+----------------------------------------------- */
+.wrapper {
+    display: flex;
+    min-height: 100vh;
+}
+
+/* -----------------------------------------------
+   3. Sidebar
+----------------------------------------------- */
+#sidebar {
+    width: var(--sidebar-width);
+    min-height: 100vh;
+    background: var(--sidebar-bg);
+    border-right: 1px solid rgba(255, 255, 255, 0.05);
+    display: flex;
+    flex-direction: column;
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 100;
+    transition: transform var(--transition);
+}
+
+.sidebar-brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 20px 22px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    transition: background var(--transition);
+}
+
+.sidebar-brand:hover {
+    background: rgba(255, 255, 255, 0.03);
+}
+
+.brand-icon {
+    font-size: 28px;
+}
+
+.brand-text {
+    font-size: 16px;
+    font-weight: 700;
+    color: #fff;
+    letter-spacing: .3px;
+}
+
+/* Nav listesi */
+.sidebar-nav {
+    list-style: none;
+    padding: 14px 0;
+    margin: 0;
+    flex: 1;
+    overflow-y: auto;
+}
+
+.sidebar-nav::-webkit-scrollbar {
+    width: 4px;
+}
+
+.sidebar-nav::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+}
+
+.nav-label {
+    padding: 12px 22px 5px;
+    font-size: 10.5px;
+    font-weight: 700;
+    letter-spacing: 1.2px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+}
+
+.sidebar-nav li a {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 22px;
+    color: rgba(255, 255, 255, 0.6);
+    text-decoration: none;
+    border-radius: 0;
+    font-size: 13.5px;
+    font-weight: 500;
+    transition: color var(--transition), background var(--transition);
+    border-left: 3px solid transparent;
+}
+
+.sidebar-nav li a:hover {
+    color: #fff;
+    background: rgba(255, 255, 255, 0.04);
+}
+
+.sidebar-nav li a.active {
+    color: var(--accent);
+    background: var(--accent-soft);
+    border-left-color: var(--accent);
+}
+
+.sidebar-nav li a i {
+    font-size: 16px;
+    width: 24px;
+    text-align: center;
+}
+
+/* Accordion Toggle Icon Animation */
+.sidebar-nav li a[data-bs-toggle="collapse"] .toggle-icon {
+    transition: transform 0.3s ease;
+}
+
+.sidebar-nav li a[data-bs-toggle="collapse"].collapsed .toggle-icon {
+    transform: rotate(-90deg);
+}
+
+.sidebar-nav .collapse li a {
+    border-left: none;
+    padding-left: 20px;
+    font-size: 13px;
+    opacity: 0.85;
+}
+
+.sidebar-nav .collapse li a:hover {
+    opacity: 1;
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.sidebar-nav .collapse li a.active {
+    background: transparent;
+    color: var(--accent);
+    font-weight: 600;
+}
+
+.sidebar-footer {
+    padding: 14px 22px;
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+    color: var(--text-muted);
+    font-size: 12px;
+}
+
+/* Sidebar kapalı durumu */
+#sidebar.collapsed {
+    transform: translateX(calc(-1 * var(--sidebar-width)));
+}
+
+/* -----------------------------------------------
+   4. İçerik Alanı
+----------------------------------------------- */
+#content {
+    margin-left: var(--sidebar-width);
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    transition: margin var(--transition);
+}
+
+#content.expanded {
+    margin-left: 0;
+}
+
+/* -----------------------------------------------
+   5. Topbar
+----------------------------------------------- */
+.topbar {
+    height: var(--topbar-height);
+    background: var(--card-bg);
+    border-bottom: 1px solid var(--card-border);
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 0 24px;
+    position: sticky;
+    top: 0;
+    z-index: 90;
+}
+
+.btn-toggle {
+    background: none;
+    border: none;
+    color: var(--text-primary);
+    font-size: 22px;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 8px;
+    transition: background var(--transition);
+}
+
+.btn-toggle:hover {
+    background: rgba(255, 255, 255, 0.07);
+}
+
+.topbar-title {
+    font-size: 16px;
+    font-weight: 600;
+    flex: 1;
+}
+
+.topbar-right {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    font-size: 13px;
+    color: var(--text-muted);
+}
+
+/* -----------------------------------------------
+   6. Sayfa İçeriği
+----------------------------------------------- */
+.page-content {
+    padding: 28px 28px 40px;
+}
+
+/* -----------------------------------------------
+   7. Kartlar
+----------------------------------------------- */
+.panel {
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: var(--radius);
+    overflow: hidden;
+}
+
+.panel-header {
+    padding: 16px 22px;
+    border-bottom: 1px solid var(--card-border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.panel-header h5 {
+    margin: 0;
+    font-size: 15px;
+    font-weight: 600;
+}
+
+.panel-body {
+    padding: 22px;
+}
+
+/* Stat kartları */
+.stat-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 18px;
+    margin-bottom: 28px;
+}
+
+.stat-card {
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: var(--radius);
+    padding: 20px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    transition: transform var(--transition), box-shadow var(--transition);
+}
+
+.stat-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+}
+
+.stat-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+    flex-shrink: 0;
+}
+
+.stat-icon.blue {
+    background: rgba(14, 165, 233, 0.15);
+    color: var(--accent);
+}
+
+.stat-icon.green {
+    background: rgba(34, 197, 94, 0.15);
+    color: var(--success);
+}
+
+.stat-icon.orange {
+    background: rgba(245, 158, 11, 0.15);
+    color: var(--warning);
+}
+
+.stat-icon.red {
+    background: rgba(239, 68, 68, 0.15);
+    color: var(--danger);
+}
+
+.stat-label {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-bottom: 2px;
+}
+
+.stat-value {
+    font-size: 22px;
+    font-weight: 700;
+    line-height: 1.2;
+}
+
+/* -----------------------------------------------
+   8. Tablo
+----------------------------------------------- */
+.table-dark-custom {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.table-dark-custom th {
+    background: rgba(0, 0, 0, 0.2);
+    color: var(--text-muted);
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .8px;
+    padding: 11px 16px;
+    border-bottom: 1px solid var(--card-border);
+    white-space: nowrap;
+}
+
+.table-dark-custom td {
+    padding: 12px 16px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+    vertical-align: middle;
+    color: var(--text-primary);
+}
+
+.table-dark-custom tbody tr:hover {
+    background: rgba(255, 255, 255, 0.025);
+}
+
+.table-dark-custom tbody tr:last-child td {
+    border-bottom: none;
+}
+
+/* -----------------------------------------------
+   9. Formlar
+----------------------------------------------- */
+.form-control-dark,
+.form-select-dark {
+    background: rgba(255, 255, 255, 0.06) !important;
+    border: 1px solid rgba(255, 255, 255, 0.12) !important;
+    border-radius: 9px !important;
+    color: #fff !important;
+    padding: 10px 14px !important;
+    font-size: 14px !important;
+    transition: border-color var(--transition), box-shadow var(--transition) !important;
+}
+
+.form-control-dark:focus,
+.form-select-dark:focus {
+    border-color: var(--accent) !important;
+    box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.18) !important;
+    outline: none !important;
+}
+
+.form-control-dark::placeholder {
+    color: rgba(255, 255, 255, 0.25) !important;
+}
+
+.form-select-dark option {
+    background: #162333;
+    color: #fff;
+}
+
+label.form-label-dark {
+    font-size: 13px;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.65);
+    margin-bottom: 6px;
+}
+
+/* -----------------------------------------------
+   10. Butonlar
+----------------------------------------------- */
+.btn-accent {
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    padding: 9px 18px;
+    border-radius: 9px;
+    font-size: 13.5px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background var(--transition), transform var(--transition);
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    text-decoration: none;
+}
+
+.btn-accent:hover {
+    background: var(--accent-hover);
+    color: #fff;
+    transform: translateY(-1px);
+}
+
+.btn-sm-icon {
+    width: 32px;
+    height: 32px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 7px;
+    border: none;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background var(--transition);
+}
+
+.btn-edit {
+    background: rgba(14, 165, 233, 0.15);
+    color: var(--accent);
+}
+
+.btn-delete {
+    background: rgba(239, 68, 68, 0.15);
+    color: var(--danger);
+}
+
+.btn-edit:hover {
+    background: rgba(14, 165, 233, 0.3);
+}
+
+.btn-delete:hover {
+    background: rgba(239, 68, 68, 0.3);
+}
+
+/* -----------------------------------------------
+   11. Badge / Etiketler
+----------------------------------------------- */
+.badge-stock-ok {
+    background: rgba(34, 197, 94, 0.15);
+    color: var(--success);
+    padding: 3px 9px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.badge-stock-low {
+    background: rgba(245, 158, 11, 0.15);
+    color: var(--warning);
+    padding: 3px 9px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.badge-stock-out {
+    background: rgba(239, 68, 68, 0.15);
+    color: var(--danger);
+    padding: 3px 9px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+/* -----------------------------------------------
+   12. Kritik Stok Uyarı Satırı
+----------------------------------------------- */
+.row-critical {
+    background: rgba(239, 68, 68, 0.05) !important;
+}
+
+.row-low {
+    background: rgba(245, 158, 11, 0.05) !important;
+}
+
+/* -----------------------------------------------
+   13. Dosya Upload Alanı
+----------------------------------------------- */
+.upload-zone {
+    border: 2px dashed rgba(255, 255, 255, 0.15);
+    border-radius: var(--radius);
+    padding: 28px;
+    text-align: center;
+    cursor: pointer;
+    transition: border-color var(--transition), background var(--transition);
+    color: var(--text-muted);
+}
+
+.upload-zone:hover {
+    border-color: var(--accent);
+    background: var(--accent-soft);
+    color: var(--accent);
+}
+
+.upload-zone i {
+    font-size: 32px;
+    display: block;
+    margin-bottom: 8px;
+}
+
+/* -----------------------------------------------
+   14. Modal özelleştirmesi
+----------------------------------------------- */
+.modal-dark .modal-content {
+    background: #162333;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: var(--text-primary);
+    border-radius: 16px;
+}
+
+.modal-dark .modal-header {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    padding: 18px 24px;
+}
+
+.modal-dark .modal-footer {
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.modal-dark .btn-close {
+    filter: invert(1);
+}
+
+/* -----------------------------------------------
+   15. Ürün Görseli
+----------------------------------------------- */
+.product-img {
+    width: 42px;
+    height: 42px;
+    border-radius: 8px;
+    object-fit: cover;
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.product-img-placeholder {
+    width: 42px;
+    height: 42px;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.07);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+}
+
+/* -----------------------------------------------
+   16. Responsive
+----------------------------------------------- */
+@media (max-width: 768px) {
+    #sidebar {
+        transform: translateX(calc(-1 * var(--sidebar-width)));
+    }
+
+    #sidebar.show {
+        transform: translateX(0);
+    }
+
+    #content {
+        margin-left: 0;
+    }
+
+    .page-content {
+        padding: 16px;
+    }
+
+    .stat-cards {
+        grid-template-columns: 1fr 1fr;
+    }
+}
+
+/* 17. Yazıcı (Print) Optimizasyonları */
+@media print {
+    * {
+        overflow: visible !important;
+        scrollbar-width: none !important;
+    }
+
+    ::-webkit-scrollbar {
+        display: none !important;
+    }
+
+    body,
+    html {
+        height: auto !important;
+        overflow: visible !important;
+        background: white !important;
+    }
+
+    .sidebar,
+    .topbar,
+    .d-print-none {
+        display: none !important;
+    }
+
+    #content {
+        margin-left: 0 !important;
+        width: 100% !important;
+        border: none !important;
+    }
+}
