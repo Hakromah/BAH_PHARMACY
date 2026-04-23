@@ -1,0 +1,34 @@
+# BAH Pharmacy - Git Ignore
+
+# Yapılandırma (Hassas veriler - DB şifresi vs.)
+/config/config.php
+
+# Yüklenen dosyalar ve storage (büyük, kişisel veriler)
+/storage/backups/
+/storage/exports/
+/storage/logs/
+/storage/images/
+
+# Geçici ve debug dosyaları
+/tmp/
+/fix_db_translations.php
+*.log
+
+# Vendor / node_modules
+/vendor/
+/node_modules/
+
+# OS dosyaları
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE dosyaları
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Antigravity (AI assistant)
+.antigravityignore
+/.gemini/

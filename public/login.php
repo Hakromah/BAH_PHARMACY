@@ -45,50 +45,40 @@ $pageTitle = __('system_login');
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>
-        <?= e($pageTitle) ?> | BAH Pharmacy
-    </title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <title><?= e($pageTitle) ?> | BAH Pharmacy</title>
     <style>
-        :root {
-            --bg: #0f172a;
-            --panel: #1e293b;
-            --accent: #0ea5e9;
-            --text: #f8fafc;
-            --text-muted: #94a3b8;
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
         }
 
         body {
-            background-color: var(--bg);
-            color: var(--text);
-            font-family: 'Inter', sans-serif;
+            background-color: #0f172a;
+            color: #f8fafc;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
             height: 100vh;
             display: flex;
             align-items: center;
             justify-content: center;
-            margin: 0;
-            overflow: hidden;
+            padding: 16px;
         }
 
         .login-card {
-            background: var(--panel);
-            border: 1px solid rgba(255, 255, 255, 0.05);
+            background: #1e293b;
+            border: 1px solid rgba(255, 255, 255, 0.06);
             border-radius: 24px;
             padding: 40px;
             width: 100%;
             max-width: 420px;
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
-            animation: fadeIn 0.6s ease-out;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6);
+            animation: fadeIn 0.5s ease-out;
         }
 
         @keyframes fadeIn {
             from {
                 opacity: 0;
-                transform: translateY(20px);
+                transform: translateY(18px);
             }
 
             to {
@@ -99,41 +89,74 @@ $pageTitle = __('system_login');
 
         .logo-box {
             text-align: center;
-            margin-bottom: 30px;
+            margin-bottom: 28px;
         }
 
-        .logo-box i {
+        .logo-icon {
             font-size: 48px;
-            color: var(--accent);
-            filter: drop-shadow(0 0 15px rgba(14, 165, 233, 0.4));
+            line-height: 1;
+            margin-bottom: 12px;
         }
 
-        .form-control-dark {
-            background: rgba(15, 23, 42, 0.5);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            color: white;
+        .logo-box h4 {
+            font-size: 20px;
+            font-weight: 700;
+            color: #f8fafc;
+            margin-bottom: 6px;
+        }
+
+        .logo-box p {
+            font-size: 13px;
+            color: #94a3b8;
+        }
+
+        .form-label {
+            display: block;
+            font-size: 13px;
+            font-weight: 600;
+            color: #94a3b8;
+            margin-bottom: 7px;
+        }
+
+        .form-group {
+            margin-bottom: 18px;
+        }
+
+        .form-control {
+            width: 100%;
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            color: #f8fafc;
             padding: 12px 16px;
             border-radius: 12px;
-            transition: all 0.2s;
+            font-size: 14px;
+            font-family: inherit;
+            outline: none;
+            transition: border-color 0.2s, box-shadow 0.2s;
         }
 
-        .form-control-dark:focus {
-            background: rgba(15, 23, 42, 0.8);
-            border-color: var(--accent);
+        .form-control:focus {
+            border-color: #0ea5e9;
             box-shadow: 0 0 0 4px rgba(14, 165, 233, 0.15);
-            color: white;
+        }
+
+        .form-control::placeholder {
+            color: rgba(255, 255, 255, 0.25);
         }
 
         .btn-login {
-            background: var(--accent);
+            background: #0ea5e9;
             border: none;
             color: white;
             font-weight: 600;
+            font-size: 15px;
             padding: 14px;
             border-radius: 12px;
             width: 100%;
-            margin-top: 10px;
-            transition: all 0.3s;
+            margin-top: 8px;
+            cursor: pointer;
+            transition: filter 0.2s, transform 0.2s, box-shadow 0.2s;
+            font-family: inherit;
         }
 
         .btn-login:hover {
@@ -141,48 +164,80 @@ $pageTitle = __('system_login');
             transform: translateY(-2px);
             box-shadow: 0 10px 15px -3px rgba(14, 165, 233, 0.3);
         }
+
+        .btn-login:active {
+            transform: translateY(0);
+        }
+
+        .alert {
+            padding: 10px 14px;
+            border-radius: 10px;
+            font-size: 13px;
+            margin-bottom: 18px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .alert-danger {
+            background: rgba(239, 68, 68, 0.15);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            color: #fca5a5;
+        }
+
+        .alert-warning {
+            background: rgba(245, 158, 11, 0.15);
+            border: 1px solid rgba(245, 158, 11, 0.3);
+            color: #fcd34d;
+        }
+
+        .footer-text {
+            text-align: center;
+            font-size: 12px;
+            color: #475569;
+            margin-top: 24px;
+        }
     </style>
 </head>
 
 <body>
-
     <div class="login-card">
         <div class="logo-box">
-            <i class="bi bi-capsule-pill"></i>
-            <h4 class="mt-3 fw-bold">BAH Pharmacy</h4>
-            <p class="text-muted small"><?= __('login_subtitle') ?></p>
+            <div class="logo-icon">💊</div>
+            <h4>BAH Pharmacy</h4>
+            <p><?= __('login_subtitle') ?></p>
         </div>
 
         <?php if ($error): ?>
-            <div class="alert alert-danger py-2" style="font-size:13px;border-radius:10px;">
-                <i class="bi bi-exclamation-triangle me-2"></i>
-                <?= e($error) ?>
+            <div class="alert alert-danger">
+                &#9888; <?= e($error) ?>
             </div>
         <?php endif; ?>
 
         <?php if (get('timeout')): ?>
-            <div class="alert alert-warning py-2" style="font-size:13px;border-radius:10px;">
-                <i class="bi bi-clock-history me-2"></i><?= __('session_timeout_message') ?>
+            <div class="alert alert-warning">
+                &#9200; <?= __('session_timeout_message') ?>
             </div>
         <?php endif; ?>
 
         <form method="POST" action="login.php">
-            <div class="mb-3">
-                <label class="form-label small text-muted"><?= __('username') ?></label>
-                <input type="text" name="username" class="form-control-dark w-100" required autofocus>
+            <div class="form-group">
+                <label class="form-label" for="username"><?= __('username') ?></label>
+                <input type="text" id="username" name="username" class="form-control" required autofocus
+                    autocomplete="username">
             </div>
-            <div class="mb-4">
-                <label class="form-label small text-muted"><?= __('password') ?></label>
-                <input type="password" name="password" class="form-control-dark w-100" required>
+            <div class="form-group">
+                <label class="form-label" for="password"><?= __('password') ?></label>
+                <input type="password" id="password" name="password" class="form-control" required
+                    autocomplete="current-password">
             </div>
             <button type="submit" class="btn-login"><?= __('login_button') ?></button>
         </form>
 
-        <div class="mt-4 text-center">
-            <p class="text-muted small mb-0">&copy; 2026 BAH Software</p>
+        <div class="footer-text">
+            &copy; 2026 BAH Software
         </div>
     </div>
-
 </body>
 
 </html>
