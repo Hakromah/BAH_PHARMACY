@@ -324,53 +324,62 @@ $showFlash = (get('flash') === '1');
             }
 
             .page-content {
-                padding: 0 !important;
+                .page-content {
+                    padding: 0 !important;
+                }
+
+                .panel {
+                    border: none !important;
+                    box-shadow: none !important;
+                    margin: 0 !important;
+                }
+
+                @page {
+                    size: A4 portrait;
+                    margin: 15mm;
+                }
             }
 
-            .panel {
-                border: none !important;
-                box-shadow: none !important;
-                margin: 0 !important;
+            .report-paper {
+                background: white;
+                padding: 40px;
+                color: #333;
+                font-size:
+                    <?= (int) ($tpl['settings']['font_size'] ?? 14) ?>
+                    px;
+                line-height: 1.6;
+                width: 210mm;
+                min-height: 297mm;
+                margin: 0 auto;
+                box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
+                border-radius: 4px;
             }
 
-            .invoice-card {
-                border: none !important;
+            .report-logo {
+                width: 90px !important;
+                height: 90px !important;
+                max-width: 90px !important;
+                max-height: 90px !important;
+                object-fit: contain;
+                display: block;
+                margin: 0;
             }
-        }
 
-        .report-paper {
-            background: white;
-            padding: 50px;
-            color: #333;
-            font-size:
-                <?= (int) ($tpl['settings']['font_size'] ?? 14) . 'px' ?>
-            ;
-            min-height: 1000px;
-            line-height: 1.5;
-        }
+            .section-box {
+                margin-bottom: 35px;
+            }
 
-        .report-logo {
-            width:
-                <?= (int) ($tpl['settings']['logo_size'] ?? 60) . 'px' ?>
-            ;
-            height: auto;
-        }
+            .inv-table th {
+                background: #f8fafc !important;
+                color: #475569 !important;
+                padding: 12px;
+                font-size: 0.85em;
+            }
 
-        .section-box {
-            margin-bottom: 35px;
-        }
-
-        .inv-table th {
-            background: #f8fafc !important;
-            color: #475569 !important;
-            padding: 12px;
-            font-size: 0.85em;
-        }
-
-        .summary-table td {
-            padding: 8px 0;
-            border: none;
-        }
+            .summary-table td {
+                padding: 8px 0;
+                border: none;
+            }
     </style>
 
     <div class="row justify-content-center">

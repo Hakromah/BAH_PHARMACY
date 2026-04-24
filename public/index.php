@@ -78,100 +78,68 @@ require_once dirname(__DIR__) . '/core/layout_header.php';
 
 <!-- Stat Cards -->
 <div class="stat-cards mb-4">
-    <div class="stat-card">
+    <div class="stat-card" onclick="window.location.href='<?= BASE_URL ?>/modules/sales/index.php?date=today'"
+        style="cursor:pointer;" title="Bugünün Satışlarını Göster">
         <div class="stat-icon blue"><i class="bi bi-cart-check"></i></div>
         <div>
-            <div class="stat-label">
-                <?= __('today_sales') ?>
-            </div>
-            <div class="stat-value">
-                <?= (int) $todayCount ?>
-            </div>
-            <div style="font-size:12px;color:var(--success);">
-                <?= formatMoney((float) $todayRev) ?>
-            </div>
+            <div class="stat-label"><?= __('today_sales') ?></div>
+            <div class="stat-value"><?= (int) $todayCount ?></div>
+            <div style="font-size:12px;color:var(--success);"><?= formatMoney((float) $todayRev) ?></div>
         </div>
     </div>
-    <div class="stat-card">
+    <div class="stat-card" onclick="window.location.href='<?= BASE_URL ?>/modules/reports/index.php'"
+        style="cursor:pointer;" title="Raporlara Git">
         <div class="stat-icon green"><i class="bi bi-graph-up-arrow"></i></div>
         <div>
-            <div class="stat-label">
-                <?= __('today_profit') ?>
-            </div>
-            <div class="stat-value" style="font-size:16px;">
-                <?= formatMoney((float) $todayProfit) ?>
-            </div>
+            <div class="stat-label"><?= __('today_profit') ?></div>
+            <div class="stat-value" style="font-size:16px;"><?= formatMoney((float) $todayProfit) ?></div>
         </div>
     </div>
-    <div class="stat-card">
+    <div class="stat-card" onclick="window.location.href='<?= BASE_URL ?>/modules/sales/index.php'"
+        style="cursor:pointer;" title="Aylık Satışları Göster">
         <div class="stat-icon blue"><i class="bi bi-cash-stack"></i></div>
         <div>
-            <div class="stat-label">
-                <?= __('monthly_revenue') ?>
-            </div>
-            <div class="stat-value" style="font-size:15px;">
-                <?= formatMoney((float) $monthRev) ?>
-            </div>
-            <div style="font-size:12px;color:var(--text-muted);">
-                <?= (int) $monthCount ?>
-                <?= __('sale_count') ?>
-            </div>
+            <div class="stat-label"><?= __('monthly_revenue') ?></div>
+            <div class="stat-value" style="font-size:15px;"><?= formatMoney((float) $monthRev) ?></div>
+            <div style="font-size:12px;color:var(--text-muted);"><?= (int) $monthCount ?> <?= __('sale_count') ?></div>
         </div>
     </div>
-    <div class="stat-card">
+    <div class="stat-card" onclick="window.location.href='<?= BASE_URL ?>/modules/reports/index.php'"
+        style="cursor:pointer;" title="Raporlara Git">
         <div class="stat-icon green"><i class="bi bi-trophy"></i></div>
         <div>
-            <div class="stat-label">
-                <?= __('monthly_profit') ?>
-            </div>
-            <div class="stat-value" style="font-size:15px;">
-                <?= formatMoney((float) $monthProfit) ?>
-            </div>
+            <div class="stat-label"><?= __('monthly_profit') ?></div>
+            <div class="stat-value" style="font-size:15px;"><?= formatMoney((float) $monthProfit) ?></div>
         </div>
     </div>
-    <div class="stat-card">
+    <div class="stat-card" onclick="window.location.href='<?= BASE_URL ?>/modules/products/index.php'"
+        style="cursor:pointer;" title="Ürün Listesine Git">
         <div class="stat-icon orange"><i class="bi bi-box-seam"></i></div>
         <div>
-            <div class="stat-label">
-                <?= __('total_products') ?>
-            </div>
-            <div class="stat-value">
-                <?= $totalProducts ?>
-            </div>
+            <div class="stat-label"><?= __('total_products') ?></div>
+            <div class="stat-value"><?= $totalProducts ?></div>
             <?php if ($criticalStock > 0): ?>
-                <div style="font-size:12px;color:var(--warning);">⚠
-                    <?= $criticalStock ?>
-                    <?= __('critical') ?>
-                </div>
+                <div style="font-size:12px;color:var(--warning);">⚠ <?= $criticalStock ?>     <?= __('critical') ?></div>
             <?php endif; ?>
             <?php if ($outOfStock > 0): ?>
-                <div style="font-size:12px;color:var(--danger);">❌
-                    <?= $outOfStock ?>
-                    <?= __('out_of_stock') ?>
-                </div>
+                <div style="font-size:12px;color:var(--danger);">❌ <?= $outOfStock ?>     <?= __('out_of_stock') ?></div>
             <?php endif; ?>
         </div>
     </div>
-    <div class="stat-card">
+    <div class="stat-card" onclick="window.location.href='<?= BASE_URL ?>/modules/customers/index.php'"
+        style="cursor:pointer;" title="Müşteri Listesine Git">
         <div class="stat-icon blue"><i class="bi bi-people"></i></div>
         <div>
-            <div class="stat-label">
-                <?= __('total_customers') ?>
-            </div>
-            <div class="stat-value">
-                <?= $totalCustomers ?>
-            </div>
+            <div class="stat-label"><?= __('total_customers') ?></div>
+            <div class="stat-value"><?= $totalCustomers ?></div>
         </div>
     </div>
-    <div class="stat-card">
+    <div class="stat-card" onclick="window.location.href='<?= BASE_URL ?>/modules/customers/receivables.php'"
+        style="cursor:pointer;" title="Alacak Listesine Git">
         <div class="stat-icon red"><i class="bi bi-exclamation-triangle"></i></div>
         <div>
-            <div class="stat-label">
-                <?= __('total_debt') ?>
-            </div>
-            <div class="stat-value" style="font-size:15px;">
-                <?= formatMoney((float) $totalDebt) ?>
-            </div>
+            <div class="stat-label"><?= __('total_debt') ?></div>
+            <div class="stat-value" style="font-size:15px;"><?= formatMoney((float) $totalDebt) ?></div>
         </div>
     </div>
 </div>
@@ -233,7 +201,7 @@ require_once dirname(__DIR__) . '/core/layout_header.php';
                             class="bi bi-box-seam me-2"></i>
                         <?= __('new_product') ?>
                     </a>
-                    <a href="<?= BASE_URL ?>/modules/customers/form.php" class="btn btn-outline-secondary"><i
+                    <a href="<?= BASE_URL ?>/modules/customers/form.php" class="btn btn-outline-secondary" style="border-color:#8b5cf6; color:#8b5cf6;"><i
                             class="bi bi-person-plus me-2"></i>
                         <?= __('new_customer') ?>
                     </a>

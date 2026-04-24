@@ -172,12 +172,56 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         setFlash('success', 'Customer balance repaired by scanning all records.');
         redirect(BASE_URL . '/modules/customers/detail.php?id=' . $id);
+    } elseif ($action === 'edit_payment') {
+        $pid = (int) post('payment_id');
+        $amt = (float) post('amount');
+        $method = post('method');
+        $note = post('note');
+
+        $pdo->beginTransaction();
+        try {
+            $stmt = $pdo->prepare("SELECT * FROM payments WHERE id = :pid AND customer_id = :cid");
+            $stmt->execute([':pid' => $pid, ':cid' => $id]);
+            $oldP = $stmt->fetch();
+            if ($oldP) {
+                $diff = $amt - $oldP['amount'];
+                $pdo->prepare("UPDATE customers SET total_debt = total_debt - :diff WHERE id = :cid")->execute([':diff' => $diff, ':cid' => $id]);
+                if ($oldP['sale_id']) {
+                    $pdo->prepare("UPDATE sales SET paid_amount = paid_amount + :diff, remaining_amount = remaining_amount - :diff WHERE id = :sid")
+                        ->execute([':diff' => $diff, ':sid' => $oldP['sale_id']]);
+                }
+                $pdo->prepare("UPDATE payments SET amount = :a, method = :m, note = :n WHERE id = :i")
+                    ->execute([':a' => $amt, ':m' => $method, ':n' => $note, ':i' => $pid]);
+                $pdo->commit();
+                setFlash('success', __('success'));
+            }
+        } catch (Exception $e) {
+            $pdo->rollBack();
+            setFlash('error', $e->getMessage());
+        }
+        redirect(BASE_URL . '/modules/customers/detail.php?id=' . $id);
+
+    } elseif ($action === 'edit_sale') {
+        $sid = (int) post('sale_id');
+        $note = post('note');
+        $due_date = post('due_date') ?: null;
+
+        $pdo->prepare("UPDATE sales SET note = :n, due_date = :d WHERE id = :i AND customer_id = :cid")
+            ->execute([':n' => $note, ':d' => $due_date, ':i' => $sid, ':cid' => $id]);
+        setFlash('success', __('success'));
+        redirect(BASE_URL . '/modules/customers/detail.php?id=' . $id);
     }
 }
 
 // İstatistik & Listeler...
 $sales = $pdo->prepare("
     SELECT s.*, 
+           (
+               SELECT GROUP_CONCAT(CONCAT(p.name, ' <i>(x', si.quantity, ')</i>') SEPARATOR '<br>')
+               FROM sale_items si 
+               JOIN products p ON si.product_id = p.id 
+               WHERE si.sale_id = s.id
+           ) as items_summary,
            (SELECT SUM(quantity) FROM sale_items WHERE sale_id = s.id) as item_count 
     FROM sales s
     WHERE s.customer_id = :cid 
@@ -186,6 +230,26 @@ $sales = $pdo->prepare("
 $sales->execute([':cid' => $id]);
 $sales = $sales->fetchAll();
 $payments = $pdo->query("SELECT * FROM payments WHERE customer_id = $id AND amount > 0 ORDER BY created_at DESC")->fetchAll();
+
+// ── Geçmişleri Birleştir & Sırala ────────────
+$history = [];
+foreach ($sales as $s) {
+    $history[] = [
+        '_type' => 'sale',
+        '_time' => strtotime($s['created_at']),
+        'data' => $s
+    ];
+}
+foreach ($payments as $p) {
+    $history[] = [
+        '_type' => 'payment',
+        '_time' => strtotime($p['created_at']),
+        'data' => $p
+    ];
+}
+usort($history, function ($a, $b) {
+    return $b['_time'] <=> $a['_time']; // Yeniden eskiye
+});
 
 $pendingSales = array_filter($sales, function ($s) {
     return $s['remaining_amount'] > 0;
@@ -327,167 +391,188 @@ require_once dirname(__DIR__, 2) . '/core/layout_header.php';
 
 <div class="row g-4">
 
-    <!-- Satışlar Tablosu -->
-    <div class="col-md-7">
+    <div class="col-12">
         <div class="panel">
-            <div class="panel-header">
-                <h5><i class="bi bi-cart3 me-2"></i><?= __('sales_history') ?><span class="badge bg-secondary ms-2">
-                        <?= count($sales) ?>
-                    </span>
+            <div class="panel-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+                <h5 class="mb-0"><i
+                        class="bi bi-clock-history me-2"></i><?= __('transaction_history') ?? 'İşlem Geçmişi' ?>
+                    <span class="badge bg-secondary ms-2" style="font-size:12px;"
+                        id="recordCountBadge"><?= count($history) ?></span>
                 </h5>
+                <!-- Dinamik Arama & Tarih Filtresi -->
+                <div class="d-flex gap-2">
+                    <input type="text" id="histSearchBox" class="form-control-dark form-control-sm"
+                        placeholder="Metin, miktar, ilaç ara..." style="width: 200px;">
+                    <input type="date" id="histDateStart" class="form-control-dark form-control-sm"
+                        style="width: 130px;" title="Başlangıç Tarihi">
+                    <input type="date" id="histDateEnd" class="form-control-dark form-control-sm" style="width: 130px;"
+                        title="Bitiş Tarihi">
+                </div>
             </div>
             <div class="table-responsive">
-                <table class="table-dark-custom">
+                <table class="table-dark-custom align-middle" id="historyTable">
                     <thead>
                         <tr>
-                            <th>
-                                <?= __('date') ?>
-                            </th>
-                            <th><?= __('product_count') ?></th>
-                            <th><?= __('total') ?></th>
-                            <th><?= __('paid') ?></th>
-                            <th><?= __('remaining') ?></th>
-                            <th><?= __('due_date') ?></th>
-                            <th><?= __('invoice') ?></th>
-                            <th><?= __('actions') ?></th>
+                            <th><?= __('date') ?></th>
+                            <th>İşlem Türü / <?= __('type') ?></th>
+                            <th>İçerik / <?= __('description') ?></th>
+                            <th class="text-end">İşlem Tutarı / Ödenen</th>
+                            <th class="text-end"><?= __('status') ?> / <?= __('remaining') ?></th>
+                            <th class="text-end"><?= __('actions') ?></th>
                         </tr>
                     </thead>
                     <tbody>
-                        <?php if (empty($sales)): ?>
+                        <?php if (empty($history)): ?>
                             <tr>
-                                <td colspan="8" class="text-center py-5 text-muted"><?= __('no_data') ?></td>
+                                <td colspan="6" class="text-center py-5 text-muted"><?= __('no_data') ?></td>
                             </tr>
                         <?php else: ?>
-                            <?php foreach ($sales as $s): ?>
-                                <tr class="<?= $s['remaining_amount'] > 0 ? 'row-low' : '' ?>">
-                                    <td style="font-size:12px;">
-                                        <?= date('d.m.Y H:i', strtotime($s['created_at'])) ?>
-                                    </td>
-                                    <td>
-                                        <?php if ($s['item_count'] > 0): ?>
-                                            <?= (int) $s['item_count'] ?>             <?= __('items') ?>
-                                        <?php else: ?>
-                                            <span style="color:var(--danger);font-size:12px;"><i
-                                                    class="bi bi-journal-text me-1"></i><?= __('debt_note') ?></span>
-                                        <?php endif; ?>
-                                    </td>
-                                    <td>
-                                        <?= formatMoney((float) $s['final_amount']) ?>
-                                    </td>
-                                    <td style="color:var(--success);">
-                                        <?= formatMoney((float) $s['paid_amount']) ?>
-                                    </td>
-                                    <td>
-                                        <?php if ($s['remaining_amount'] > 0): ?>
-                                            <strong style="color:var(--danger);">
-                                                <?= formatMoney((float) $s['remaining_amount']) ?>
-                                            </strong>
-                                        <?php else: ?>
-                                            <span style="color:var(--success);font-size:13px;"><?= __('paid') ?></span>
-                                        <?php endif; ?>
-                                    </td>
-                                    <td>
-                                        <?php if ($s['due_date']):
-                                            $days = (int) ceil((strtotime($s['due_date']) - time()) / 86400);
-                                            $color = $days < 0 ? 'var(--danger)' : ($days <= 7 ? 'var(--warning)' : 'var(--text-muted)');
-                                            ?>
-                                            <div style="font-size:12px; color:<?= $color ?>;">
-                                                <?= date('d.m.Y', strtotime($s['due_date'])) ?>
-                                                <?php if ($s['remaining_amount'] > 0): ?>
-                                                    <div style="font-size:10px;">
-                                                        <?= $days < 0 ? abs($days) . ' ' . __('late') : $days . ' ' . __('left') ?>
-                                                    </div>
-                                                <?php endif; ?>
-                                            </div>
-                                        <?php else: ?>
-                                            <span class="text-muted small">—</span>
-                                        <?php endif; ?>
-                                    </td>
-                                    <td>
-                                        <?php if ($s['invoice_path']): ?>
-                                            <a href="<?= BASE_URL ?>/storage/invoices/<?= e($s['invoice_path']) ?>" target="_blank"
-                                                class="btn-sm-icon"><i class="bi bi-file-earmark-pdf"></i></a>
-                                        <?php else: ?>
-                                            <a href="<?= BASE_URL ?>/modules/sales/invoice.php?id=<?= $s['id'] ?>" target="_blank"
-                                                class="btn-sm-icon"><i class="bi bi-printer"></i></a>
-                                        <?php endif; ?>
-                                    </td>
-                                    <td>
-                                        <form method="POST" action="detail.php?id=<?= $id ?>"
-                                            onsubmit="return confirm('Are you sure you want to delete this operation? The debt balance will be recalculated.')"
-                                            style="display:inline;">
-                                            <input type="hidden" name="csrf_token" value="<?= e($_SESSION['csrf_token']) ?>">
-                                            <input type="hidden" name="action" value="delete_sale">
-                                            <input type="hidden" name="sale_id" value="<?= $s['id'] ?>">
-                                            <button type="submit" class="btn-sm-icon btn-delete" title="Delete"><i
-                                                    class="bi bi-trash"></i></button>
-                                        </form>
-                                    </td>
-                                </tr>
-                            <?php endforeach; ?>
-                        <?php endif; ?>
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    </div>
-
-    <!-- Ödeme Geçmişi -->
-    <div class="col-md-5">
-        <div class="panel">
-            <div class="panel-header">
-                <h5><i class="bi bi-cash-stack me-2"></i><?= __('payment_history') ?><span
-                        class="badge bg-secondary ms-2">
-                        <?= count($payments) ?>
-                    </span>
-                </h5>
-            </div>
-            <div class="table-responsive">
-                <table class="table-dark-custom">
-                    <thead>
-                        <tr>
-                            <th>
-                                <?= __('date') ?>
-                            </th>
-                            <th><?= __('amount') ?></th>
-                            <th><?= __('method') ?></th>
-                            <th><?= __('receipt') ?></th>
-                            <th><?= __('actions') ?></th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <?php if (empty($payments)): ?>
-                            <tr>
-                                <td colspan="5" class="text-center py-5 text-muted"><?= __('no_data') ?></td>
-                            </tr>
-                        <?php else: ?>
-                            <?php foreach ($payments as $p):
-                                [$mlabel, $mcls] = $methodLabels[$p['method']] ?? [$p['method'], 'badge-stock-low'];
+                            <?php foreach ($history as $row):
+                                $isSale = ($row['_type'] === 'sale');
+                                $item = $row['data'];
                                 ?>
-                                <tr>
-                                    <td style="font-size:12px;">
-                                        <?= date('d.m.Y H:i', strtotime($p['created_at'])) ?>
-                                    </td>
-                                    <td><strong style="color:var(--success);">
-                                            <?= formatMoney((float) $p['amount']) ?>
-                                        </strong></td>
-                                    <td><span class="<?= $mcls ?>">
-                                            <?= $mlabel ?>
-                                        </span></td>
-                                    <td>
-                                        <a href="<?= BASE_URL ?>/modules/customers/receipt.php?id=<?= $p['id'] ?>"
-                                            target="_blank" class="btn-sm-icon me-1"><i class="bi bi-printer"></i></a>
-                                        <form method="POST" action="detail.php?id=<?= $id ?>"
-                                            onsubmit="return confirm('Are you sure you want to delete this payment? The debt balance will be recalculated.')"
-                                            style="display:inline;">
-                                            <input type="hidden" name="csrf_token" value="<?= e($_SESSION['csrf_token']) ?>">
-                                            <input type="hidden" name="action" value="delete_payment">
-                                            <input type="hidden" name="payment_id" value="<?= $p['id'] ?>">
-                                            <button type="submit" class="btn-sm-icon btn-delete" title="Delete"><i
-                                                    class="bi bi-trash"></i></button>
-                                        </form>
-                                    </td>
-                                </tr>
+                                <?php if ($isSale): ?>
+                                    <!-- SATIŞ VEYA BORÇ SATIRI -->
+                                    <tr class="hist-row <?= $item['remaining_amount'] > 0 ? 'row-low' : '' ?>"
+                                        data-date="<?= date('Y-m-d', strtotime($item['created_at'])) ?>">
+                                        <td style="font-size:12px; width:130px;">
+                                            <?= date('d.m.Y H:i', strtotime($item['created_at'])) ?>
+                                        </td>
+                                        <td>
+                                            <?php if ($item['item_count'] > 0): ?>
+                                                <span class="badge"
+                                                    style="background:rgba(239,68,68,0.1);color:#ef4444;border:1px solid #ef4444;">
+                                                    <i class="bi bi-cart3 me-1"></i><?= __('sale') ?? 'Satış' ?>
+                                                </span>
+                                            <?php else: ?>
+                                                <span class="badge"
+                                                    style="background:rgba(14,165,233,0.1);color:#0ea5e9;border:1px solid #0ea5e9;">
+                                                    <i class="bi bi-journal-plus me-1"></i><?= __('debt_note') ?>
+                                                </span>
+                                            <?php endif; ?>
+                                        </td>
+                                        <td style="font-size:13px; max-width:250px;">
+                                            <div><strong class="text-muted">#<?= $item['id'] ?> Nolu İşlem</strong></div>
+                                            <?php if ($item['item_count'] > 0): ?>
+                                                <div class="mt-1" style="font-size:11px;color:var(--text-muted); line-height:1.4;">
+                                                    <?= $item['items_summary'] ?>
+                                                </div>
+                                            <?php else: ?>
+                                                <span class="text-muted"><i
+                                                        class="bi bi-info-circle me-1"></i><?= e($item['note'] ?: 'Manuel Borç Eklendi') ?></span>
+                                            <?php endif; ?>
+
+                                            <?php if ($item['due_date'] && $item['remaining_amount'] > 0):
+                                                $days = (int) ceil((strtotime($item['due_date']) - time()) / 86400);
+                                                $color = $days < 0 ? 'var(--danger)' : ($days <= 7 ? 'var(--warning)' : 'var(--text-muted)');
+                                                ?>
+                                                <div style="font-size:11px; color:<?= $color ?>; margin-top:4px;">
+                                                    <i class="bi bi-calendar-event me-1"></i>Vade:
+                                                    <?= date('d.m.Y', strtotime($item['due_date'])) ?>
+                                                    (<?= $days < 0 ? abs($days) . ' ' . __('late') : $days . ' ' . __('left') ?>)
+                                                </div>
+                                            <?php endif; ?>
+                                        </td>
+                                        <td class="text-end">
+                                            <div class="fw-bold" style="color:var(--text-primary);">
+                                                <?= formatMoney((float) $item['final_amount']) ?>
+                                            </div>
+                                            <?php if ($item['paid_amount'] > 0): ?>
+                                                <div style="font-size:11px; color:var(--success);">Ödenen:
+                                                    <?= formatMoney((float) $item['paid_amount']) ?>
+                                                </div>
+                                            <?php endif; ?>
+                                        </td>
+                                        <td class="text-end">
+                                            <?php if ($item['remaining_amount'] > 0): ?>
+                                                <strong
+                                                    style="color:var(--danger);"><?= formatMoney((float) $item['remaining_amount']) ?></strong>
+                                            <?php else: ?>
+                                                <span class="badge bg-success-soft text-success px-2 py-1"><i
+                                                        class="bi bi-check-circle me-1"></i>Ödendi</span>
+                                            <?php endif; ?>
+                                        </td>
+                                        <td class="text-end">
+                                            <button type="button" class="btn-sm-icon text-info me-1" title="Görüntüle"
+                                                onclick="viewTransaction('sale', <?= $item['id'] ?>)"><i
+                                                    class="bi bi-eye"></i></button>
+                                            <a href="<?= BASE_URL ?>/modules/sales/edit.php?id=<?= $item['id'] ?>"
+                                                class="btn-sm-icon text-warning me-1" title="Düzenle"><i
+                                                    class="bi bi-pencil"></i></a>
+
+                                            <?php if ($item['invoice_path']): ?>
+                                                <a href="<?= BASE_URL ?>/storage/invoices/<?= e($item['invoice_path']) ?>"
+                                                    target="_blank" class="btn-sm-icon me-1"><i class="bi bi-file-earmark-pdf"></i></a>
+                                            <?php else: ?>
+                                                <a href="<?= BASE_URL ?>/modules/sales/invoice.php?id=<?= $item['id'] ?>"
+                                                    target="_blank" class="btn-sm-icon me-1" title="Fatura"><i
+                                                        class="bi bi-printer"></i></a>
+                                            <?php endif; ?>
+                                            <form method="POST" action="detail.php?id=<?= $id ?>"
+                                                onsubmit="return confirm('Silmek istediğinizden emin misiniz? Bakiye otomatik güncellenecektir.')"
+                                                style="display:inline;">
+                                                <input type="hidden" name="csrf_token" value="<?= e($_SESSION['csrf_token']) ?>">
+                                                <input type="hidden" name="action" value="delete_sale">
+                                                <input type="hidden" name="sale_id" value="<?= $item['id'] ?>">
+                                                <button type="submit" class="btn-sm-icon btn-delete" title="Delete"><i
+                                                        class="bi bi-trash"></i></button>
+                                            </form>
+                                        </td>
+                                    </tr>
+
+                                <?php else: ?>
+                                    <!-- TAHSİLAT VEYA ÖDEME SATIRI -->
+                                    <?php [$mlabel, $mcls] = $methodLabels[$item['method']] ?? [$item['method'], 'badge-stock-low']; ?>
+                                    <tr class="hist-row" data-date="<?= date('Y-m-d', strtotime($item['created_at'])) ?>">
+                                        <td style="font-size:12px; width:130px;">
+                                            <?= date('d.m.Y H:i', strtotime($item['created_at'])) ?>
+                                        </td>
+                                        <td>
+                                            <span class="badge"
+                                                style="background:rgba(34,197,94,0.1);color:#22c55e;border:1px solid #22c55e;">
+                                                <i class="bi bi-cash-stack me-1"></i><?= __('receipt') ?? 'Tahsilat' ?>
+                                            </span>
+                                        </td>
+                                        <td style="font-size:13px; max-width:250px;">
+                                            <div><strong class="text-muted">#<?= $item['id'] ?> Nolu İşlem</strong></div>
+                                            <div><span class="<?= $mcls ?> px-2 py-1 mt-1 d-inline-block"
+                                                    style="font-size:10px;"><?= $mlabel ?></span></div>
+                                            <?php if ($item['note']): ?>
+                                                <div class="text-muted mt-1" style="font-size:11px;"><i
+                                                        class="bi bi-info-circle me-1"></i><?= e($item['note']) ?></div>
+                                            <?php endif; ?>
+                                        </td>
+                                        <td class="text-end">
+                                            <strong
+                                                style="color:var(--success);"><?= formatMoney((float) $item['amount']) ?></strong>
+                                        </td>
+                                        <td class="text-end">
+                                            <span class="badge bg-secondary-soft text-secondary px-2 py-1"><i
+                                                    class="bi bi-check me-1"></i>Tahsil Edildi</span>
+                                        </td>
+                                        <td class="text-end">
+                                            <button type="button" class="btn-sm-icon text-info me-1" title="Görüntüle"
+                                                onclick="viewTransaction('payment', <?= $item['id'] ?>)"><i
+                                                    class="bi bi-eye"></i></button>
+                                            <button type="button" class="btn-sm-icon text-warning me-1" title="Düzenle"
+                                                onclick="editPayment(<?= $item['id'] ?>, <?= $item['amount'] ?>, '<?= $item['method'] ?>', '<?= htmlspecialchars($item['note'] ?? '', ENT_QUOTES) ?>')"><i
+                                                    class="bi bi-pencil"></i></button>
+
+                                            <a href="<?= BASE_URL ?>/modules/customers/receipt.php?id=<?= $item['id'] ?>"
+                                                target="_blank" class="btn-sm-icon me-1" title="Makbuz"><i
+                                                    class="bi bi-printer"></i></a>
+                                            <form method="POST" action="detail.php?id=<?= $id ?>"
+                                                onsubmit="return confirm('Ödemeyi silmek istediğinize emin misiniz? Müşteri Bakiyesi yeniden hesaplanacaktır.')"
+                                                style="display:inline;">
+                                                <input type="hidden" name="csrf_token" value="<?= e($_SESSION['csrf_token']) ?>">
+                                                <input type="hidden" name="action" value="delete_payment">
+                                                <input type="hidden" name="payment_id" value="<?= $item['id'] ?>">
+                                                <button type="submit" class="btn-sm-icon btn-delete" title="Delete"><i
+                                                        class="bi bi-trash"></i></button>
+                                            </form>
+                                        </td>
+                                    </tr>
+                                <?php endif; ?>
                             <?php endforeach; ?>
                         <?php endif; ?>
                     </tbody>
@@ -613,5 +698,125 @@ require_once dirname(__DIR__, 2) . '/core/layout_header.php';
         </div>
     </div>
 </div>
+
+<!-- ── Düzenleme Modalları ─────────────────────────────────────── -->
+<div class="modal fade modal-dark" id="editPaymentModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="bi bi-pencil-square me-2"></i>Tahsilat Düzenle</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="detail.php?id=<?= $id ?>" data-once>
+                <input type="hidden" name="csrf_token" value="<?= e($_SESSION['csrf_token']) ?>">
+                <input type="hidden" name="action" value="edit_payment">
+                <input type="hidden" name="payment_id" id="ep_id">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label-dark">Tutar <span class="text-danger">*</span></label>
+                        <input type="number" step="0.01" class="form-control-dark" name="amount" id="ep_amt" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label-dark">Ödeme Yöntemi</label>
+                        <select class="form-select-dark" name="method" id="ep_method">
+                            <option value="cash">Nakit</option>
+                            <option value="card">Kredi Kartı</option>
+                            <option value="transfer">Havale / EFT</option>
+                            <option value="other">Diğer</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label-dark">Not / Açıklama</label>
+                        <input type="text" class="form-control-dark" name="note" id="ep_note">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary"
+                        data-bs-dismiss="modal"><?= __('cancel') ?></button>
+                    <button type="submit" class="btn btn-warning"><i class="bi bi-check-lg me-1"></i>Güncelle</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="viewTransactionModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="viewTxTitle"><i class="bi bi-search me-2"></i>İşlem Önizleme</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-4" id="viewTxBody" style="overflow-y:auto; max-height:80vh;">
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Kapat</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Tablodaki işlemleri dinamik filtreleme
+    document.addEventListener('DOMContentLoaded', function () {
+        const sBox = document.getElementById('histSearchBox');
+        const dStart = document.getElementById('histDateStart');
+        const dEnd = document.getElementById('histDateEnd');
+        const rows = document.querySelectorAll('.hist-row');
+        const badge = document.getElementById('recordCountBadge');
+
+        function applyFilter() {
+            const query = sBox.value.toLowerCase();
+            const start = dStart.value; // YYYY-MM-DD
+            const end = dEnd.value;     // YYYY-MM-DD
+            let visibleCount = 0;
+
+            rows.forEach(row => {
+                const rowText = row.innerText.toLowerCase();
+                const rowDate = row.getAttribute('data-date');
+
+                let showText = rowText.includes(query);
+                let showDate = true;
+
+                if (start && rowDate < start) showDate = false;
+                if (end && rowDate > end) showDate = false;
+
+                if (showText && showDate) {
+                    row.style.display = '';
+                    visibleCount++;
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+
+            badge.textContent = visibleCount;
+        }
+
+        if (sBox) sBox.addEventListener('input', applyFilter);
+        if (dStart) dStart.addEventListener('change', applyFilter);
+        if (dEnd) dEnd.addEventListener('change', applyFilter);
+    });
+
+    // AJAX Popup modal fonksiyonu
+    function viewTransaction(type, id) {
+        document.getElementById('viewTxBody').innerHTML = '<div class="text-center p-5"><div class="spinner-border text-accent" role="status"></div></div>';
+        new bootstrap.Modal(document.getElementById('viewTransactionModal')).show();
+
+        fetch('<?= BASE_URL ?>/modules/sales/view_api.php?type=' + type + '&id=' + id)
+            .then(r => r.text())
+            .then(html => {
+                document.getElementById('viewTxBody').innerHTML = html;
+                document.getElementById('viewTxTitle').innerText = (type === 'sale' ? 'İşlem/Fatura #' : 'Ödeme/Tahsilat #') + id;
+            });
+    }
+
+    function editPayment(id, amt, method, note) {
+        document.getElementById('ep_id').value = id;
+        document.getElementById('ep_amt').value = amt;
+        document.getElementById('ep_method').value = method;
+        document.getElementById('ep_note').value = note;
+        new bootstrap.Modal(document.getElementById('editPaymentModal')).show();
+    }
+</script>
 
 <?php require_once dirname(__DIR__, 2) . '/core/layout_footer.php'; ?>

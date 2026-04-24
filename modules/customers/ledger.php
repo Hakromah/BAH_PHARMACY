@@ -28,13 +28,20 @@ if (!$customer) {
 
 // Tüm işlemleri tek sorguda çekip tarih sırasına dizme
 $sql = "
-    SELECT id as ref_id, 'sale' as type, final_amount as amount, created_at, note 
+    SELECT sales.id as ref_id, 'sale' as type, sales.final_amount as amount, sales.created_at, 
+           CONCAT(IFNULL(sales.note, ''), IF(sales.note != '', '<br>', ''), 
+               IFNULL((SELECT GROUP_CONCAT(CONCAT(p.name, ' (x', si.quantity, ')') SEPARATOR ', ')
+                FROM sale_items si 
+                JOIN products p ON si.product_id = p.id 
+                WHERE si.sale_id = sales.id), '')
+           ) as note 
     FROM sales 
     WHERE customer_id = :cid1
     
     UNION ALL
     
-    SELECT id as ref_id, 'payment' as type, amount, created_at, note 
+    SELECT id as ref_id, 'payment' as type, amount, created_at, 
+           CONCAT('Ödeme Yöntemi: ', method, IF(note != '', CONCAT('<br>Not: ', note), '')) as note 
     FROM payments 
     WHERE customer_id = :cid2
     
@@ -128,6 +135,11 @@ foreach ($ledger as $item) {
             box-shadow: none !important;
             margin: 0 !important;
         }
+
+        @page {
+            size: A4 portrait;
+            margin: 15mm;
+        }
     }
 
     .report-paper {
@@ -137,15 +149,22 @@ foreach ($ledger as $item) {
         font-size:
             <?= (int) ($tpl['settings']['font_size'] ?? 14) ?>
             px;
-        min-height: 800px;
         line-height: 1.6;
+        width: 210mm;
+        min-height: 297mm;
+        margin: 0 auto;
+        box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
+        border-radius: 4px;
     }
 
     .report-logo {
-        width:
-            <?= (int) ($tpl['settings']['logo_size'] ?? 60) ?>
-            px;
-        height: auto;
+        width: 90px !important;
+        height: 90px !important;
+        max-width: 90px !important;
+        max-height: 90px !important;
+        object-fit: contain;
+        display: block;
+        margin: 0;
     }
 
     .section-box {
@@ -177,7 +196,8 @@ foreach ($ledger as $item) {
             <?php
             $sections = $tpl['sections'];
             usort($sections, function ($a, $b) {
-                return ($a['order'] ?? 0) - ($b['order'] ?? 0); });
+                return ($a['order'] ?? 0) - ($b['order'] ?? 0);
+            });
 
             foreach ($sections as $sec):
                 if (!($sec['visible'] ?? true))
@@ -243,7 +263,7 @@ foreach ($ledger as $item) {
                                             <td><span
                                                     class="badge bg-<?= $log['debt'] > 0 ? 'danger' : 'success' ?>-soft text-<?= $log['debt'] > 0 ? 'danger' : 'success' ?>"><?= $log['type'] ?></span>
                                             </td>
-                                            <td class="small"><?= e($log['note']) ?></td>
+                                            <td class="small"><?= $log['note'] ?></td>
                                             <td class="text-end"><?= $log['debt'] > 0 ? formatMoney($log['debt']) : '-' ?></td>
                                             <td class="text-end"><?= $log['credit'] > 0 ? formatMoney($log['credit']) : '-' ?></td>
                                             <td class="text-end fw-bold"><?= formatMoney($runningBalance) ?></td>

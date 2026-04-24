@@ -7,7 +7,7 @@ function getThemes()
 {
     return [
         'dark' => [
-            'name' => 'Koyu (Varsayılan)',
+            'name' => 'Koyu (Dark)',
             'colors' => [
                 '--body-bg' => '#0f1e2d',
                 '--card-bg' => '#162333',
@@ -19,7 +19,7 @@ function getThemes()
             ]
         ],
         'light' => [
-            'name' => 'Açık (Light)',
+            'name' => 'Açık (Varsayılan)',
             'colors' => [
                 '--body-bg' => '#f1f5f9',
                 '--card-bg' => '#ffffff',
@@ -71,7 +71,7 @@ function getThemes()
 
 function getCurrentTheme()
 {
-    return $_COOKIE['current_theme'] ?? 'dark';
+    return $_COOKIE['current_theme'] ?? 'light';
 }
 
 function getThemeCSS()
@@ -106,9 +106,9 @@ function getThemeCSS()
         .alert-success { background-color: #f0fdf4 !important; border-color: #bbf7d0 !important; color: #166534 !important; }
         
         /* Arama Sonuçları */
-        #productResults, #customerResults { background: #ffffff !important; border: 1px solid #cbd5e1 !important; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1) !important; }
-        #productResults div, #customerResults div { border-bottom: 1px solid #f1f5f9 !important; }
-        #productResults strong, #customerResults strong { color: #1e293b !important; }
+        #productResults, #customerResults, #addDropdown, #productDropdown, [id$='Dropdown'] { background: #ffffff !important; border: 1px solid #cbd5e1 !important; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1) !important; }
+        #productResults div, #customerResults div, #addDropdown div, #productDropdown div, [id$='Dropdown'] div { border-bottom: 1px solid #f1f5f9 !important; color: #1e293b !important; }
+        #productResults strong, #customerResults strong, #addDropdown strong, #productDropdown strong, [id$='Dropdown'] strong { color: #1e293b !important; }
     ";
 
     $isLightBg = false;

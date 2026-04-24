@@ -108,7 +108,7 @@ require_once dirname(__DIR__, 2) . '/core/layout_header.php';
     }
 
     .section-item:hover {
-        background: rgba(255, 255, 255, 0.05);
+        background: var(--body-bg);
     }
 
     .section-item.dragging {
@@ -145,8 +145,8 @@ require_once dirname(__DIR__, 2) . '/core/layout_header.php';
     }
 
     .tab-link:hover {
-        background: rgba(255, 255, 255, 0.05);
-        color: #fff;
+        background: var(--body-bg);
+        color: var(--text-primary);
     }
 
     .tab-link.active {

@@ -63,7 +63,8 @@ require_once dirname(__DIR__, 2) . '/core/layout_header.php';
 ?>
 <!-- İstatistik Kartları -->
 <div class="stat-cards">
-    <div class="stat-card">
+    <div class="stat-card" onclick="window.location.href='index.php'" style="cursor:pointer;"
+        title="Tüm Ürünleri Listele">
         <div class="stat-icon blue"><i class="bi bi-box-seam"></i></div>
         <div>
             <div class="stat-label">
@@ -74,18 +75,8 @@ require_once dirname(__DIR__, 2) . '/core/layout_header.php';
             </div>
         </div>
     </div>
-    <div class="stat-card">
-        <div class="stat-icon green"><i class="bi bi-currency-dollar"></i></div>
-        <div>
-            <div class="stat-label">
-                <?= __('stock_value') ?>
-            </div>
-            <div class="stat-value">
-                <?= formatMoney((float) $stockValue) ?>
-            </div>
-        </div>
-    </div>
-    <div class="stat-card">
+    <div class="stat-card" onclick="window.location.href='index.php?stock=low'" style="cursor:pointer;"
+        title="Kritik Stokları Listele">
         <div class="stat-icon orange"><i class="bi bi-exclamation-triangle"></i></div>
         <div>
             <div class="stat-label">
@@ -96,7 +87,8 @@ require_once dirname(__DIR__, 2) . '/core/layout_header.php';
             </div>
         </div>
     </div>
-    <div class="stat-card">
+    <div class="stat-card" onclick="window.location.href='index.php?stock=out'" style="cursor:pointer;"
+        title="Tükenenleri Listele">
         <div class="stat-icon red"><i class="bi bi-x-circle"></i></div>
         <div>
             <div class="stat-label">
@@ -104,6 +96,17 @@ require_once dirname(__DIR__, 2) . '/core/layout_header.php';
             </div>
             <div class="stat-value">
                 <?= (int) $stats['out_of_stock'] ?>
+            </div>
+        </div>
+    </div>
+    <div class="stat-card" style="cursor:default;">
+        <div class="stat-icon green"><i class="bi bi-currency-dollar"></i></div>
+        <div>
+            <div class="stat-label">
+                <?= __('stock_value') ?>
+            </div>
+            <div class="stat-value">
+                <?= formatMoney((float) $stockValue) ?>
             </div>
         </div>
     </div>

@@ -126,8 +126,8 @@ require_once dirname(__DIR__, 2) . '/core/layout_header.php';
                         ?>
                         <tr class="<?= $rowClass ?>">
                             <td>
-                                <a href="detail.php?id=<?= $r['customer_id'] ?>"
-                                    class="fw-bold text-light text-decoration-none">
+                                <a href="detail.php?id=<?= $r['customer_id'] ?>" class="fw-bold text-decoration-none"
+                                    style="color:var(--text-primary)">
                                     <?= e($r['first_name'] . ' ' . $r['last_name']) ?>
                                 </a>
                                 <div class="small text-muted">

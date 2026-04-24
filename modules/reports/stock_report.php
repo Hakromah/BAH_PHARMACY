@@ -69,6 +69,16 @@ $printDate = date('d.m.Y H:i');
             cursor: pointer;
         }
 
+        .btn-excel {
+            background: #10b981;
+            color: #fff;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-left: 5px;
+        }
+
         .btn-back {
             display: inline-block;
             padding: 6px 12px;
@@ -163,41 +173,62 @@ $printDate = date('d.m.Y H:i');
         }
 
         @media print {
-            .toolbar {
-                display: none !important;
-            }
+            .toolbar { display: none !important; }
+            body { padding: 0; }
+            @page { size: A4 portrait; margin: 15mm; }
+        }
 
-            body {
-                padding: 0;
-            }
+        .report-logo {
+            width: 90px !important;
+            height: 90px !important;
+            object-fit: contain;
+            display: block;
         }
     </style>
 </head>
 
 <body>
 
-    <div class="toolbar">
-        <button class="btn-print" onclick="window.print()"><?= __('print') ?> / PDF</button>
-        <a href="index.php" class="btn-back"><?= __('reports') ?></a>
-        <a href="stock_report.php?type=all" class="btn-back <?= $type === 'all' ? 'active' : '' ?>"><?= __('all') ?></a>
-        <a href="stock_report.php?type=critical"
-            class="btn-back <?= $type === 'critical' ? 'active' : '' ?>"><?= __('critical') ?></a>
-        <a href="stock_report.php?type=out"
-            class="btn-back <?= $type === 'out' ? 'active' : '' ?>"><?= __('out_of_stock') ?></a>
+    <div class="toolbar d-print-none"
+        style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+        <div>
+            <button class="btn-print" onclick="window.print()"><?= __('print') ?> / PDF</button>
+            <button class="btn-excel" onclick="exportExcel()">Excel İndir</button>
+            <a href="index.php" class="btn-back"><?= __('reports') ?></a>
+            <a href="stock_report.php?type=all"
+                class="btn-back <?= $type === 'all' ? 'active' : '' ?>"><?= __('all') ?></a>
+            <a href="stock_report.php?type=critical"
+                class="btn-back <?= $type === 'critical' ? 'active' : '' ?>"><?= __('critical') ?></a>
+            <a href="stock_report.php?type=out"
+                class="btn-back <?= $type === 'out' ? 'active' : '' ?>"><?= __('out_of_stock') ?></a>
+        </div>
+        <div style="display:flex; gap:10px;">
+            <input type="text" id="searchInput" placeholder="İlaç, Barkod, Form veya Kategori Ara..."
+                style="padding:6px 12px; border:1px solid #ccc; border-radius:4px; width:280px;">
+            <select id="catFilter" style="padding:6px 12px; border:1px solid #ccc; border-radius:4px;">
+                <option value="">Tüm Kategoriler</option>
+                <?php
+                $cats = $pdo->query("SELECT * FROM categories ORDER BY name ASC")->fetchAll();
+                foreach ($cats as $c) {
+                    echo '<option value="' . $c['id'] . '">' . $c['name'] . '</option>';
+                }
+                ?>
+            </select>
+        </div>
     </div>
 
     <div class="report-header">
         <div class="print-header">
-            <h1 style="display:flex; align-items:center; gap:8px;">
+            <h1 style="display:flex; align-items:center; gap:15px;">
                 <?php if (file_exists(dirname(__DIR__, 2) . '/storage/images/logo.png')): ?>
-                    <img src="<?= BASE_URL ?>/storage/images/logo.png?v=<?= time() ?>" alt="Logo"
-                        style="width:32px; height:32px;">
+                    <img src="<?= BASE_URL ?>/storage/images/logo.png?v=<?= time() ?>" alt="Logo" class="report-logo">
                 <?php else: ?>
-                    <div
-                        style="width:32px; height:32px; border-radius:6px; background:#e7d86d; color:#000; display:flex; align-items:center; justify-content:center; font-size:16px;">
+                    <div class="report-logo" style="border-radius:6px; background:#e7d86d; color:#000; display:flex; align-items:center; justify-content:center; font-size:16px;">
                         BAH</div>
                 <?php endif; ?>
-                BAH Pharmacy <?= __('stock_report') ?>
+                <div>
+                    <div>BAH Pharmacy <?= __('stock_report') ?></div>
+                </div>
             </h1>
             <?php
             $labels = ['all' => __('all'), 'critical' => __('critical_stock'), 'out' => __('out_of_stock')];
@@ -239,7 +270,12 @@ $printDate = date('d.m.Y H:i');
                 $label = $isOut ? __('out_of_stock') : ($isLow ? __('critical') : __('sufficient'));
                 $stockVal = $p['stock_quantity'] * $p['purchase_price'];
                 ?>
-                <tr>
+                <tr class="stock-row" data-cat="<?= $p['category_id'] ?>"
+                    data-name="<?= htmlspecialchars(strtolower($p['name'])) ?>"
+                    data-barcode="<?= htmlspecialchars(strtolower($p['barcode'] ?? '')) ?>"
+                    data-form="<?= htmlspecialchars(strtolower($p['dosage_form'] ?? '')) ?>"
+                    data-catname="<?= htmlspecialchars(strtolower($p['cat_name'] ?? '')) ?>"
+                    data-stockval="<?= $stockVal > 0 ? $stockVal : 0 ?>">
                     <td>
                         <?= $i + 1 ?>
                     </td>
@@ -284,18 +320,100 @@ $printDate = date('d.m.Y H:i');
     <div class="summary">
         <div>
             <div style="font-size:11px;color:#666;"><?= __('total_products') ?></div>
-            <strong>
+            <strong id="totalCount">
                 <?= count($products) ?>
             </strong>
         </div>
         <div>
             <div style="font-size:11px;color:#666;"><?= __('total_stock_value') ?></div>
-            <strong>
+            <strong id="totalStockValue">
                 <?= formatMoney($totalValue) ?>
             </strong>
         </div>
     </div>
 
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const sInput = document.getElementById('searchInput');
+            const cFilter = document.getElementById('catFilter');
+            const rows = document.querySelectorAll('.stock-row');
+            const totalCount = document.getElementById('totalCount');
+            const totalStockValue = document.getElementById('totalStockValue');
+            const currencySymbol = '<?= getCurrencySymbol() ?>';
+
+            function applyFilter() {
+                const query = sInput.value.toLowerCase();
+                const cat = cFilter.value;
+                let visibleCount = 0;
+                let visibleStockVal = 0;
+
+                rows.forEach(r => {
+                    const name = r.getAttribute('data-name');
+                    const barcode = r.getAttribute('data-barcode');
+                    const form = r.getAttribute('data-form');
+                    const catName = r.getAttribute('data-catname');
+                    const rCat = r.getAttribute('data-cat');
+                    const val = parseFloat(r.getAttribute('data-stockval'));
+
+                    const matchesText = name.includes(query) || barcode.includes(query) || form.includes(query) || catName.includes(query);
+                    const matchesCat = (cat === '' || rCat === cat);
+
+                    if (matchesText && matchesCat) {
+                        r.style.display = '';
+                        visibleCount++;
+                        visibleStockVal += val;
+                    } else {
+                        r.style.display = 'none';
+                    }
+                });
+
+                if (totalCount) totalCount.innerText = visibleCount;
+                if (totalStockValue) {
+                    totalStockValue.innerText = currencySymbol + visibleStockVal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                }
+            }
+
+            sInput.addEventListener('input', applyFilter);
+            cFilter.addEventListener('change', applyFilter);
+        });
+
+        // Excel / XLS Export (Sütun yapıları ve HTML tablo olarak saklar)
+        function exportExcel() {
+            let tableHtml = '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">';
+            tableHtml += '<head><meta charset="UTF-8"></head><body><table border="1">';
+            
+            // Tablo Header
+            tableHtml += '<tr>';
+            document.querySelectorAll('table thead th').forEach(th => {
+                tableHtml += '<th style="background-color:#f1f5f9; font-weight:bold;">' + th.innerText + '</th>';
+            });
+            tableHtml += '</tr>';
+            
+            // Tablo Satırları (Sadece Gözükenler - Filtre uyumlu)
+            let rows = document.querySelectorAll('.stock-row');
+            rows.forEach(r => {
+                if(r.style.display !== 'none') {
+                    tableHtml += '<tr>';
+                    r.querySelectorAll('td').forEach(td => {
+                        tableHtml += '<td>' + td.innerText.trim() + '</td>';
+                    });
+                    tableHtml += '</tr>';
+                }
+            });
+
+            tableHtml += '</table></body></html>';
+
+            // XLS dosyası olarak İndirme
+            let excelFile = new Blob([tableHtml], {type: 'application/vnd.ms-excel;charset=utf-8'});
+            let link = document.createElement("a");
+            link.download = 'Stok_Raporu_' + new Date().toISOString().slice(0,10) + '.xls';
+            link.href = window.URL.createObjectURL(excelFile);
+            link.style.display = "none";
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+    </script>
 </body>
 
 </html>

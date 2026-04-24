@@ -80,25 +80,36 @@ $tpl = getReportTemplate('receipt', $pdo);
             box-shadow: none !important;
             margin: 0 !important;
         }
+
+        @page {
+            size: A4 portrait;
+            margin: 15mm;
+        }
     }
 
     .report-paper {
         background: white;
-        padding: 60px;
+        padding: 40px;
         color: #333;
         font-size:
-            <?= (int) ($tpl['settings']['font_size'] ?? 14) . 'px' ?>
-        ;
-        min-height: 800px;
+            <?= (int) ($tpl['settings']['font_size'] ?? 14) ?>
+            px;
         line-height: 1.6;
-        border: 1px solid #eee;
+        width: 210mm;
+        min-height: 297mm;
+        margin: 0 auto;
+        box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
+        border-radius: 4px;
     }
 
     .report-logo {
-        width:
-            <?= (int) ($tpl['settings']['logo_size'] ?? 60) . 'px' ?>
-        ;
-        height: auto;
+        width: 90px !important;
+        height: 90px !important;
+        max-width: 90px !important;
+        max-height: 90px !important;
+        object-fit: contain;
+        display: block;
+        margin: 0;
     }
 
     .section-box {
@@ -176,7 +187,8 @@ $tpl = getReportTemplate('receipt', $pdo);
                     case 'summary_bar': ?>
                         <div class="receipt-badge">
                             <div class="text-muted text-uppercase mb-1" style="font-size:12px; font-weight:600;">
-                                <?= __('payment_amount') ?></div>
+                                <?= __('payment_amount') ?>
+                            </div>
                             <div class="display-4 fw-bold text-success"><?= formatMoney((float) $payment['amount']) ?></div>
                         </div>
                         <?php break;
@@ -200,7 +212,8 @@ $tpl = getReportTemplate('receipt', $pdo);
                                     <?php if ($payment['total_debt'] != 0): ?>
                                         <tr class="table-light">
                                             <td colspan="2" class="text-end text-muted small text-uppercase fw-bold">
-                                                <?= __('remaining_debt') ?>:</td>
+                                                <?= __('remaining_debt') ?>:
+                                            </td>
                                             <td class="text-end fw-bold"><?= formatMoney((float) $payment['total_debt']) ?></td>
                                         </tr>
                                     <?php endif; ?>

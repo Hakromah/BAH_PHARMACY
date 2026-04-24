@@ -72,18 +72,16 @@ $tpl = getReportTemplate('debit_credit', $pdo);
         background: white;
         padding: 50px;
         color: #333;
-        font-size:
-            <?= (int) ($tpl['settings']['font_size'] ?? 14) ?>
-            px;
+        font-size: <?= (int) ($tpl['settings']['font_size'] ?? 14) ?>px;
         min-height: 1000px;
         line-height: 1.5;
     }
 
     .report-logo {
-        width:
-            <?= (int) ($tpl['settings']['logo_size'] ?? 60) ?>
-            px;
+        width: <?= (int) ($tpl['settings']['logo_size'] ?? 60) ?>px;
         height: auto;
+        max-width: 100%;
+        max-height: 150px;
     }
 
     .section-box {

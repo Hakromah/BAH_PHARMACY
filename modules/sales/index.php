@@ -39,7 +39,13 @@ $whereStr = implode(' AND ', $where);
 // Satışlar listesi
 $stmtList = $pdo->prepare("
     SELECT s.*, 
-        CONCAT(c.first_name, ' ', c.last_name) as customer_name
+        CONCAT(c.first_name, ' ', c.last_name) as customer_name,
+        (
+            SELECT GROUP_CONCAT(CONCAT(p.name, ' <i>(x', si.quantity, ')</i>') SEPARATOR '<br>')
+            FROM sale_items si 
+            JOIN products p ON si.product_id = p.id 
+            WHERE si.sale_id = s.id
+        ) as items_summary
     FROM sales s
     LEFT JOIN customers c ON s.customer_id = c.id
     WHERE $whereStr
@@ -262,7 +268,14 @@ require_once dirname(__DIR__, 2) . '/core/layout_header.php';
                                 <?php endif; ?>
                             </td>
                             <td>
-                                <div class="d-flex gap-1">
+                                <div class="d-flex gap-1 align-items-center">
+                                    <button type="button" class="btn-sm-icon text-info" title="Görüntüle"
+                                        onclick="viewSaleDetails(<?= $s['id'] ?>)">
+                                        <i class="bi bi-eye"></i>
+                                    </button>
+                                    <a href="edit.php?id=<?= $s['id'] ?>" class="btn-sm-icon text-warning" title="Düzenle">
+                                        <i class="bi bi-pencil"></i>
+                                    </a>
                                     <a href="invoice.php?id=<?= $s['id'] ?>" target="_blank" class="btn-sm-icon"
                                         title="<?= __('print') ?>">
                                         <i class="bi bi-printer"></i>
@@ -281,5 +294,38 @@ require_once dirname(__DIR__, 2) . '/core/layout_header.php';
         </table>
     </div>
 </div>
+
+<!-- Görüntüleme Modalı (Büyük Formatlı) -->
+<div class="modal fade" id="viewTransactionModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="viewTxTitle"><i class="bi bi-file-earmark-text me-2"></i>Satış Detayları
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-4" id="viewTxBody" style="overflow-y:auto; max-height:80vh;">
+                <!-- AJAX Loader -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Kapat</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function viewSaleDetails(id) {
+        document.getElementById('viewTxBody').innerHTML = '<div class="text-center p-5"><div class="spinner-border text-accent" role="status"></div></div>';
+        new bootstrap.Modal(document.getElementById('viewTransactionModal')).show();
+
+        fetch('<?= BASE_URL ?>/modules/sales/view_api.php?type=sale&id=' + id)
+            .then(r => r.text())
+            .then(html => {
+                document.getElementById('viewTxBody').innerHTML = html;
+                document.getElementById('viewTxTitle').innerText = 'Satış / Fatura #' + id;
+            });
+    }
+</script>
 
 <?php require_once dirname(__DIR__, 2) . '/core/layout_footer.php'; ?>

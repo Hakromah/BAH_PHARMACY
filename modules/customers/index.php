@@ -25,6 +25,8 @@ if ($debtFilter === 'has_debt') {
     $where[] = 'c.total_debt > 0';
 } elseif ($debtFilter === 'no_debt') {
     $where[] = 'c.total_debt <= 0';
+} elseif ($debtFilter === 'has_credit') {
+    $where[] = 'c.total_debt < 0';
 }
 
 $whereStr = implode(' AND ', $where);
@@ -43,48 +45,56 @@ $customers = $stmt->fetchAll();
 $stats = $pdo->query("
     SELECT
         COUNT(*) AS total,
-        SUM(total_debt > 0) AS with_debt
+        SUM(total_debt > 0)  AS with_debt,
+        SUM(total_debt < 0)  AS with_credit
     FROM customers
 ")->fetch();
 
 $totalDebt = sumConverted("SELECT total_debt as val, currency FROM customers WHERE total_debt > 0", 'val', 'currency');
+$totalCredit = sumConverted("SELECT ABS(total_debt) as val, currency FROM customers WHERE total_debt < 0", 'val', 'currency');
 
 $pageTitle = __('customers');
 require_once dirname(__DIR__, 2) . '/core/layout_header.php';
 ?>
 <!-- İstatistik Kartları -->
 <div class="stat-cards">
-    <div class="stat-card">
+    <div class="stat-card" onclick="window.location.href='index.php'" style="cursor:pointer;"
+        title="Tüm Müşterileri Listele">
         <div class="stat-icon blue"><i class="bi bi-people"></i></div>
         <div>
-            <div class="stat-label">
-                <?= __('total_customers') ?>
-            </div>
-            <div class="stat-value">
-                <?= (int) $stats['total'] ?>
-            </div>
+            <div class="stat-label">Toplam Müşteri</div>
+            <div class="stat-value"><?= (int) $stats['total'] ?></div>
         </div>
     </div>
-    <div class="stat-card">
+    <div class="stat-card" onclick="window.location.href='index.php?debt=has_debt'" style="cursor:pointer;"
+        title="Borçlu Müşterileri Listele">
         <div class="stat-icon orange"><i class="bi bi-person-exclamation"></i></div>
         <div>
-            <div class="stat-label">
-                <?= __('has_debt') ?>
-            </div>
-            <div class="stat-value">
-                <?= (int) $stats['with_debt'] ?>
-            </div>
+            <div class="stat-label">Borçlu Müşteri</div>
+            <div class="stat-value"><?= (int) $stats['with_debt'] ?></div>
         </div>
     </div>
-    <div class="stat-card">
+    <div class="stat-card" onclick="window.location.href='index.php?debt=has_credit'" style="cursor:pointer;"
+        title="Alacaklı Müşterileri Listele">
+        <div class="stat-icon green"><i class="bi bi-person-check"></i></div>
+        <div>
+            <div class="stat-label">Alacaklı Müşteri</div>
+            <div class="stat-value"><?= (int) $stats['with_credit'] ?></div>
+        </div>
+    </div>
+    <div class="stat-card" style="cursor:default;">
         <div class="stat-icon red"><i class="bi bi-credit-card"></i></div>
         <div>
-            <div class="stat-label">
-                <?= __('total_debt') ?>
-            </div>
-            <div class="stat-value" style="font-size:16px;">
-                <?= formatMoney((float) $totalDebt) ?>
-            </div>
+            <div class="stat-label">Toplam Borç</div>
+            <div class="stat-value" style="font-size:16px;"><?= formatMoney((float) $totalDebt) ?></div>
+        </div>
+    </div>
+    <div class="stat-card" style="cursor:default;">
+        <div class="stat-icon purple" style="background:rgba(139,92,246,0.15); color:#8b5cf6;"><i
+                class="bi bi-wallet2"></i></div>
+        <div>
+            <div class="stat-label">Toplam Alacak</div>
+            <div class="stat-value" style="font-size:16px;"><?= formatMoney((float) $totalCredit) ?></div>
         </div>
     </div>
 </div>
@@ -93,14 +103,14 @@ require_once dirname(__DIR__, 2) . '/core/layout_header.php';
 <div class="panel mb-4">
     <div class="panel-body">
         <form method="GET" action="index.php" class="row g-3 align-items-end">
-            <div class="col-md-5">
+            <div class="col-md-3">
                 <label class="form-label-dark">
                     <?= __('search_customer') ?>
                 </label>
                 <input type="text" name="search" class="form-control-dark" placeholder="<?= __('search_customer') ?>"
                     value="<?= e($search) ?>">
             </div>
-            <div class="col-md-3">
+            <div class="col-md-2">
                 <label class="form-label-dark">
                     <?= __('status') ?>
                 </label>
@@ -116,25 +126,26 @@ require_once dirname(__DIR__, 2) . '/core/layout_header.php';
                     </option>
                 </select>
             </div>
-            <div class="col-md-4 d-flex gap-2">
-                <button type="submit" class="btn-accent"><i class="bi bi-search"></i>
-                    <?= __('search') ?>
+            <div class="col-md-7 d-flex justify-content-end gap-2 flex-wrap">
+                <button type="submit" class="btn-primary px-3"
+                    style="border:none; border-radius:4px; display:inline-flex; align-items:center; font-weight:600; height:38px;">
+                    <i class="bi bi-search me-1"></i><?= __('search') ?>
                 </button>
-                <a href="index.php" class="btn btn-outline-secondary btn-sm align-self-end">
-                    <?= __('all') ?>
+                <a href="index.php" class="btn btn-secondary px-3"
+                    style="display:inline-flex; align-items:center; font-weight:600; height:38px;">
+                    <i class="bi bi-arrow-repeat me-1"></i><?= __('all') ?>
                 </a>
-                <a href="fast_payment.php" class="btn btn-success ms-2 px-3" style="font-weight:600;">
-                    <i class="bi bi-cash-coin me-1"></i>
-                    <?= __('fast_payment') ?>
-
+                <a href="fast_payment.php" class="btn btn-success px-3"
+                    style="display:inline-flex; align-items:center; font-weight:600; height:38px;">
+                    <i class="bi bi-cash-coin me-1"></i><?= __('fast_payment') ?>
                 </a>
-                <a href="receivables.php" class="btn btn-warning ms-2 px-3" style="font-weight:600; color:#000;">
-                    <i class="bi bi-calendar-check me-1"></i>
-                    <?= __('receivables_list') ?>
+                <a href="receivables.php" class="btn btn-warning px-3"
+                    style="display:inline-flex; align-items:center; font-weight:600; color:#000; height:38px;">
+                    <i class="bi bi-calendar-check me-1"></i><?= __('receivables_list') ?>
                 </a>
-                <a href="form.php" class="btn-accent ms-2">
-                    <i class="bi bi-person-plus me-1"></i>
-                    <?= __('new_customer') ?>
+                <a href="form.php" class="btn-accent px-3"
+                    style="display:inline-flex; align-items:center; font-weight:600; height:38px;">
+                    <i class="bi bi-person-plus me-1"></i><?= __('new_customer') ?>
                 </a>
             </div>
         </form>

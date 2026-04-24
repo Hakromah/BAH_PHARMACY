@@ -163,7 +163,7 @@ require_once dirname(__DIR__, 2) . '/core/layout_header.php';
                             data-bs-toggle="dropdown">
                             <i class="bi bi-download me-1"></i><?= __('excel_csv') ?>
                         </button>
-                        <ul class="dropdown-menu dropdown-menu-dark">
+                        <ul class="dropdown-menu">
                             <li><a class="dropdown-item" href="?action=export&l=tr"><?= __('download_tr') ?></a></li>
                             <li><a class="dropdown-item" href="?action=export&l=en"><?= __('download_en') ?></a></li>
                             <li><a class="dropdown-item" href="?action=export&l=fr"><?= __('download_fr') ?></a></li>
@@ -180,7 +180,7 @@ require_once dirname(__DIR__, 2) . '/core/layout_header.php';
     <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?>">
 
     <div class="panel">
-        <div class="panel-header d-flex justify-content-between align-items-center bg-dark">
+        <div class="panel-header d-flex justify-content-between align-items-center">
             <h5 class="mb-0"><i class="bi bi-translate me-2 text-accent"></i><?= $groups[$activeGroup] ?>
             </h5>
             <button type="submit" class="btn btn-accent btn-sm shadow-sm">
@@ -188,13 +188,13 @@ require_once dirname(__DIR__, 2) . '/core/layout_header.php';
             </button>
         </div>
         <div class="table-responsive" style="max-height: 75vh; overflow-y: auto;">
-            <table class="table table-dark table-hover mb-0 align-middle">
-                <thead class="sticky-top bg-dark" style="z-index: 10;">
+            <table class="table-dark-custom">
+                <thead class="sticky-top">
                     <tr>
-                        <th style="width: 20%; background: #0f172a;"><?= __('lang_key') ?></th>
-                        <th style="background: #0f172a;">🇹🇷 <?= __('tr_lang') ?></th>
-                        <th style="background: #0f172a;">🇺🇸 <?= __('en_lang') ?></th>
-                        <th style="background: #0f172a;">🇫🇷 <?= __('fr_lang') ?></th>
+                        <th style="width: 20%;"><?= __('lang_key') ?></th>
+                        <th>🇹🇷 <?= __('tr_lang') ?></th>
+                        <th>🇺🇸 <?= __('en_lang') ?></th>
+                        <th>🇫🇷 <?= __('fr_lang') ?></th>
                     </tr>
                 </thead>
                 <tbody>
@@ -211,25 +211,28 @@ require_once dirname(__DIR__, 2) . '/core/layout_header.php';
                             </td>
                             <td>
                                 <input type="text" name="trans[<?= e($key) ?>][tr]"
-                                    class="form-control form-control-sm bg-dark border-secondary text-white"
-                                    value="<?= e($allData['tr'][$key] ?? '') ?>" placeholder="TR...">
+                                    value="<?= e($allData['tr'][$key] ?? '') ?>"
+                                    class="form-control form-control-sm form-control-dark" autocomplete="off"
+                                    placeholder="TR...">
                             </td>
                             <td>
                                 <input type="text" name="trans[<?= e($key) ?>][en]"
-                                    class="form-control form-control-sm bg-dark border-secondary text-white"
-                                    value="<?= e($allData['en'][$key] ?? '') ?>" placeholder="EN...">
+                                    value="<?= e($allData['en'][$key] ?? '') ?>"
+                                    class="form-control form-control-sm form-control-dark" autocomplete="off"
+                                    placeholder="EN...">
                             </td>
                             <td>
                                 <input type="text" name="trans[<?= e($key) ?>][fr]"
-                                    class="form-control form-control-sm bg-dark border-secondary text-white"
-                                    value="<?= e($allData['fr'][$key] ?? '') ?>" placeholder="FR...">
+                                    value="<?= e($allData['fr'][$key] ?? '') ?>"
+                                    class="form-control form-control-sm form-control-dark" autocomplete="off"
+                                    placeholder="FR...">
                             </td>
                         </tr>
                     <?php endforeach; ?>
                 </tbody>
             </table>
         </div>
-        <div class="panel-footer bg-dark p-3 text-end border-top border-secondary">
+        <div class="panel-footer p-3 text-end border-top" style="border-color:var(--card-border);">
             <button type="submit" class="btn btn-accent px-4 py-2">
                 <i class="bi bi-save me-2"></i><?= __('apply_changes') ?>
             </button>
