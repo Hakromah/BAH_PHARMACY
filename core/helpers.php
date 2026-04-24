@@ -12,9 +12,9 @@
 /**
  * Çıktıyı XSS'e karşı güvenli hale getirir.
  */
-function e(string $str): string
+function e(?string $str): string
 {
-    return htmlspecialchars($str, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+    return htmlspecialchars($str ?? '', ENT_QUOTES | ENT_HTML5, 'UTF-8');
 }
 
 // -------------------------------------------------------
