@@ -12,7 +12,7 @@ $pdo = Database::getInstance();
 $id = (int) get('id');
 
 if ($id <= 0) {
-    setFlash('error', 'Geçersiz müşteri.');
+    setFlash('error', __('invalid_customer'));
     redirect(BASE_URL . '/modules/customers/index.php');
 }
 
@@ -22,7 +22,7 @@ $stmt->execute([':id' => $id]);
 $customer = $stmt->fetch();
 
 if (!$customer) {
-    setFlash('error', 'Müşteri bulunamadı.');
+    setFlash('error', __('customer_not_found'));
     redirect(BASE_URL . '/modules/customers/index.php');
 }
 
@@ -41,7 +41,7 @@ $sql = "
     UNION ALL
     
     SELECT id as ref_id, 'payment' as type, amount, created_at, 
-           CONCAT('Ödeme Yöntemi: ', method, IF(note != '', CONCAT('<br>Not: ', note), '')) as note 
+           CONCAT('" . addslashes(__('payment_method')) . ": ', method, IF(note != '', CONCAT('<br>" . addslashes(__('note')) . ": ', note), '')) as note 
     FROM payments 
     WHERE customer_id = :cid2
     
@@ -72,9 +72,9 @@ $summary = [
 $logs = [];
 foreach ($ledger as $item) {
     if ($item['type'] === 'sale') {
-        $logs[] = ['date' => $item['created_at'], 'type' => 'Satış', 'note' => $item['note'], 'debt' => (float) $item['amount'], 'credit' => 0];
+        $logs[] = ['date' => $item['created_at'], 'type' => __('sale'), 'note' => $item['note'], 'debt' => (float) $item['amount'], 'credit' => 0];
     } else {
-        $logs[] = ['date' => $item['created_at'], 'type' => 'Tahsilat', 'note' => $item['note'], 'debt' => 0, 'credit' => (float) $item['amount']];
+        $logs[] = ['date' => $item['created_at'], 'type' => __('payment'), 'note' => $item['note'], 'debt' => 0, 'credit' => (float) $item['amount']];
     }
 }
 ?>
@@ -231,10 +231,10 @@ foreach ($ledger as $item) {
                             </div>
                             <div class="col-6 text-end">
                                 <h6 class="fw-bold opacity-75 text-uppercase mb-2" style="font-size:11px;">ACCOUNT SUMMARY</h6>
-                                <div>Total Debt: <strong><?= formatMoney($summary['total_debt']) ?></strong></div>
-                                <div>Total Paid: <strong><?= formatMoney($summary['total_paid']) ?></strong></div>
-                                <div class="mt-1 fs-5">Remaining Balance: <strong
-                                        class="text-accent"><?= formatMoney($customer['total_debt']) ?></strong></div>
+                                <div><?= __('total_debt') ?>: <strong><?= formatMoney($summary['total_debt']) ?></strong></div>
+                                <div><?= __('total_paid') ?>: <strong><?= formatMoney($summary['total_paid']) ?></strong></div>
+                                <div class="mt-1 fs-5"><?= __('remaining_balance') ?>: <strong
+                                        class="text-accent"><?= formatMoney($summary['total_debt'] - $summary['total_paid']) ?></strong></div>
                             </div>
                         </div>
                         <?php break;
@@ -244,12 +244,12 @@ foreach ($ledger as $item) {
                             <table class="table table-bordered table-sm align-middle">
                                 <thead>
                                     <tr>
-                                        <th style="width:15%">Date</th>
-                                        <th style="width:10%">Type</th>
-                                        <th>Description</th>
-                                        <th class="text-end" style="width:15%">Debt</th>
-                                        <th class="text-end" style="width:15%">Credit</th>
-                                        <th class="text-end" style="width:15%">Balance</th>
+                                        <th style="width:15%"><?= __('date') ?></th>
+                                        <th style="width:10%"><?= __('type') ?></th>
+                                        <th><?= __('description') ?></th>
+                                        <th class="text-end" style="width:15%"><?= __('debt') ?></th>
+                                        <th class="text-end" style="width:15%"><?= __('credit') ?></th>
+                                        <th class="text-end" style="width:15%"><?= __('balance') ?></th>
                                     </tr>
                                 </thead>
                                 <tbody>

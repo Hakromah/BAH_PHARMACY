@@ -163,9 +163,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             setFlash('error', 'Deletion error: ' . $e->getMessage());
         }
     } elseif ($action === 'recalc_debt') {
-        $stmt = $pdo->prepare("SELECT SUM(final_amount - paid_amount) FROM sales WHERE customer_id = :cid");
-        $stmt->execute([':cid' => $id]);
-        $newDebt = (float) $stmt->fetchColumn();
+        // Correct calculation: Sum of all sales minus Sum of all payments
+        $stmtS = $pdo->prepare("SELECT SUM(final_amount) FROM sales WHERE customer_id = :cid");
+        $stmtS->execute([':cid' => $id]);
+        $totalSales = (float) $stmtS->fetchColumn();
+
+        $stmtP = $pdo->prepare("SELECT SUM(amount) FROM payments WHERE customer_id = :cid");
+        $stmtP->execute([':cid' => $id]);
+        $totalPayments = (float) $stmtP->fetchColumn();
+
+        $newDebt = $totalSales - $totalPayments;
 
         $pdo->prepare("UPDATE customers SET total_debt = :d WHERE id = :cid")
             ->execute([':d' => $newDebt, ':cid' => $id]);
@@ -402,11 +409,11 @@ require_once dirname(__DIR__, 2) . '/core/layout_header.php';
                 <!-- Dinamik Arama & Tarih Filtresi -->
                 <div class="d-flex gap-2">
                     <input type="text" id="histSearchBox" class="form-control-dark form-control-sm"
-                        placeholder="Metin, miktar, ilaç ara..." style="width: 200px;">
+                        placeholder="<?= __('search_placeholder') ?>" style="width: 200px;">
                     <input type="date" id="histDateStart" class="form-control-dark form-control-sm"
-                        style="width: 130px;" title="Başlangıç Tarihi">
+                        style="width: 130px;" title="<?= __('start_date') ?>">
                     <input type="date" id="histDateEnd" class="form-control-dark form-control-sm" style="width: 130px;"
-                        title="Bitiş Tarihi">
+                        title="<?= __('end_date') ?>">
                 </div>
             </div>
             <div class="table-responsive">
@@ -414,9 +421,9 @@ require_once dirname(__DIR__, 2) . '/core/layout_header.php';
                     <thead>
                         <tr>
                             <th><?= __('date') ?></th>
-                            <th>İşlem Türü / <?= __('type') ?></th>
-                            <th>İçerik / <?= __('description') ?></th>
-                            <th class="text-end">İşlem Tutarı / Ödenen</th>
+                            <th><?= __('type') ?></th>
+                            <th><?= __('description') ?></th>
+                            <th class="text-end"><?= __('amount_paid') ?></th>
                             <th class="text-end"><?= __('status') ?> / <?= __('remaining') ?></th>
                             <th class="text-end"><?= __('actions') ?></th>
                         </tr>
@@ -452,14 +459,14 @@ require_once dirname(__DIR__, 2) . '/core/layout_header.php';
                                             <?php endif; ?>
                                         </td>
                                         <td style="font-size:13px; max-width:250px;">
-                                            <div><strong class="text-muted">#<?= $item['id'] ?> Nolu İşlem</strong></div>
+                                            <div><strong class="text-muted">#<?= $item['id'] ?> <?= __('transaction_no') ?></strong></div>
                                             <?php if ($item['item_count'] > 0): ?>
                                                 <div class="mt-1" style="font-size:11px;color:var(--text-muted); line-height:1.4;">
                                                     <?= $item['items_summary'] ?>
                                                 </div>
                                             <?php else: ?>
                                                 <span class="text-muted"><i
-                                                        class="bi bi-info-circle me-1"></i><?= e($item['note'] ?: 'Manuel Borç Eklendi') ?></span>
+                                                        class="bi bi-info-circle me-1"></i><?= e($item['note'] ?: __('manual_debt_added')) ?></span>
                                             <?php endif; ?>
 
                                             <?php if ($item['due_date'] && $item['remaining_amount'] > 0):
@@ -467,7 +474,7 @@ require_once dirname(__DIR__, 2) . '/core/layout_header.php';
                                                 $color = $days < 0 ? 'var(--danger)' : ($days <= 7 ? 'var(--warning)' : 'var(--text-muted)');
                                                 ?>
                                                 <div style="font-size:11px; color:<?= $color ?>; margin-top:4px;">
-                                                    <i class="bi bi-calendar-event me-1"></i>Vade:
+                                                    <i class="bi bi-calendar-event me-1"></i><?= __('due') ?>:
                                                     <?= date('d.m.Y', strtotime($item['due_date'])) ?>
                                                     (<?= $days < 0 ? abs($days) . ' ' . __('late') : $days . ' ' . __('left') ?>)
                                                 </div>
@@ -478,7 +485,7 @@ require_once dirname(__DIR__, 2) . '/core/layout_header.php';
                                                 <?= formatMoney((float) $item['final_amount']) ?>
                                             </div>
                                             <?php if ($item['paid_amount'] > 0): ?>
-                                                <div style="font-size:11px; color:var(--success);">Ödenen:
+                                                <div style="font-size:11px; color:var(--success);"><?= __('paid') ?>:
                                                     <?= formatMoney((float) $item['paid_amount']) ?>
                                                 </div>
                                             <?php endif; ?>
@@ -489,15 +496,15 @@ require_once dirname(__DIR__, 2) . '/core/layout_header.php';
                                                     style="color:var(--danger);"><?= formatMoney((float) $item['remaining_amount']) ?></strong>
                                             <?php else: ?>
                                                 <span class="badge bg-success-soft text-success px-2 py-1"><i
-                                                        class="bi bi-check-circle me-1"></i>Ödendi</span>
+                                                        class="bi bi-check-circle me-1"></i><?= __('paid') ?></span>
                                             <?php endif; ?>
                                         </td>
                                         <td class="text-end">
-                                            <button type="button" class="btn-sm-icon text-info me-1" title="Görüntüle"
+                                            <button type="button" class="btn-sm-icon text-info me-1" title="<?= __('view') ?>"
                                                 onclick="viewTransaction('sale', <?= $item['id'] ?>)"><i
                                                     class="bi bi-eye"></i></button>
                                             <a href="<?= BASE_URL ?>/modules/sales/edit.php?id=<?= $item['id'] ?>"
-                                                class="btn-sm-icon text-warning me-1" title="Düzenle"><i
+                                                class="btn-sm-icon text-warning me-1" title="<?= __('edit') ?>"><i
                                                     class="bi bi-pencil"></i></a>
 
                                             <?php if ($item['invoice_path']): ?>
@@ -509,7 +516,7 @@ require_once dirname(__DIR__, 2) . '/core/layout_header.php';
                                                         class="bi bi-printer"></i></a>
                                             <?php endif; ?>
                                             <form method="POST" action="detail.php?id=<?= $id ?>"
-                                                onsubmit="return confirm('Silmek istediğinizden emin misiniz? Bakiye otomatik güncellenecektir.')"
+                                                onsubmit="return confirm('<?= __('confirm_delete') ?>')"
                                                 style="display:inline;">
                                                 <input type="hidden" name="csrf_token" value="<?= e($_SESSION['csrf_token']) ?>">
                                                 <input type="hidden" name="action" value="delete_sale">
@@ -534,7 +541,7 @@ require_once dirname(__DIR__, 2) . '/core/layout_header.php';
                                             </span>
                                         </td>
                                         <td style="font-size:13px; max-width:250px;">
-                                            <div><strong class="text-muted">#<?= $item['id'] ?> Nolu İşlem</strong></div>
+                                            <div><strong class="text-muted">#<?= $item['id'] ?> <?= __('transaction_no') ?></strong></div>
                                             <div><span class="<?= $mcls ?> px-2 py-1 mt-1 d-inline-block"
                                                     style="font-size:10px;"><?= $mlabel ?></span></div>
                                             <?php if ($item['note']): ?>
@@ -548,21 +555,21 @@ require_once dirname(__DIR__, 2) . '/core/layout_header.php';
                                         </td>
                                         <td class="text-end">
                                             <span class="badge bg-secondary-soft text-secondary px-2 py-1"><i
-                                                    class="bi bi-check me-1"></i>Tahsil Edildi</span>
+                                                    class="bi bi-check me-1"></i><?= __('collected') ?></span>
                                         </td>
                                         <td class="text-end">
-                                            <button type="button" class="btn-sm-icon text-info me-1" title="Görüntüle"
+                                            <button type="button" class="btn-sm-icon text-info me-1" title="<?= __('view') ?>"
                                                 onclick="viewTransaction('payment', <?= $item['id'] ?>)"><i
                                                     class="bi bi-eye"></i></button>
-                                            <button type="button" class="btn-sm-icon text-warning me-1" title="Düzenle"
+                                            <button type="button" class="btn-sm-icon text-warning me-1" title="<?= __('edit') ?>"
                                                 onclick="editPayment(<?= $item['id'] ?>, <?= $item['amount'] ?>, '<?= $item['method'] ?>', '<?= htmlspecialchars($item['note'] ?? '', ENT_QUOTES) ?>')"><i
                                                     class="bi bi-pencil"></i></button>
 
                                             <a href="<?= BASE_URL ?>/modules/customers/receipt.php?id=<?= $item['id'] ?>"
-                                                target="_blank" class="btn-sm-icon me-1" title="Makbuz"><i
+                                                target="_blank" class="btn-sm-icon me-1" title="<?= __('receipt') ?>"><i
                                                     class="bi bi-printer"></i></a>
                                             <form method="POST" action="detail.php?id=<?= $id ?>"
-                                                onsubmit="return confirm('Ödemeyi silmek istediğinize emin misiniz? Müşteri Bakiyesi yeniden hesaplanacaktır.')"
+                                                onsubmit="return confirm('<?= __('confirm_delete') ?>')"
                                                 style="display:inline;">
                                                 <input type="hidden" name="csrf_token" value="<?= e($_SESSION['csrf_token']) ?>">
                                                 <input type="hidden" name="action" value="delete_payment">
@@ -713,27 +720,27 @@ require_once dirname(__DIR__, 2) . '/core/layout_header.php';
                 <input type="hidden" name="payment_id" id="ep_id">
                 <div class="modal-body">
                     <div class="mb-3">
-                        <label class="form-label-dark">Tutar <span class="text-danger">*</span></label>
+                        <label class="form-label-dark"><?= __('amount') ?> <span class="text-danger">*</span></label>
                         <input type="number" step="0.01" class="form-control-dark" name="amount" id="ep_amt" required>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label-dark">Ödeme Yöntemi</label>
+                        <label class="form-label-dark"><?= __('payment_method') ?></label>
                         <select class="form-select-dark" name="method" id="ep_method">
-                            <option value="cash">Nakit</option>
-                            <option value="card">Kredi Kartı</option>
-                            <option value="transfer">Havale / EFT</option>
-                            <option value="other">Diğer</option>
+                            <option value="cash"><?= __('cash') ?></option>
+                            <option value="card"><?= __('card') ?></option>
+                            <option value="transfer"><?= __('transfer') ?></option>
+                            <option value="other"><?= __('other') ?></option>
                         </select>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label-dark">Not / Açıklama</label>
+                        <label class="form-label-dark"><?= __('note') ?></label>
                         <input type="text" class="form-control-dark" name="note" id="ep_note">
                     </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-outline-secondary"
                         data-bs-dismiss="modal"><?= __('cancel') ?></button>
-                    <button type="submit" class="btn btn-warning"><i class="bi bi-check-lg me-1"></i>Güncelle</button>
+                    <button type="submit" class="btn btn-warning"><i class="bi bi-check-lg me-1"></i><?= __('update') ?></button>
                 </div>
             </form>
         </div>
@@ -744,13 +751,13 @@ require_once dirname(__DIR__, 2) . '/core/layout_header.php';
     <div class="modal-dialog modal-dialog-centered modal-xl">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="viewTxTitle"><i class="bi bi-search me-2"></i>İşlem Önizleme</h5>
+                <h5 class="modal-title" id="viewTxTitle"><i class="bi bi-search me-2"></i><?= __('transaction_preview') ?></h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body p-4" id="viewTxBody" style="overflow-y:auto; max-height:80vh;">
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Kapat</button>
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal"><?= __('close') ?></button>
             </div>
         </div>
     </div>

@@ -206,7 +206,7 @@ require_once dirname(__DIR__, 2) . '/core/layout_header.php';
                     <div class="row g-3 mb-3">
                         <div class="col-md-5">
                             <input type="text" id="productSearch" class="form-control-dark"
-                                placeholder="<?= __('search_drug_placeholder') ?>">
+                                placeholder="<?= __('search_drug_placeholder') ?>" autocomplete="new-password">
                         </div>
                         <div class="col-md-4">
                             <select id="categoryFilter" class="form-select-dark">
@@ -305,7 +305,7 @@ require_once dirname(__DIR__, 2) . '/core/layout_header.php';
                             <?= __('search_customer') ?>
                         </label>
                         <input type="text" id="customerSearch" class="form-control-dark"
-                            placeholder="<?= __('search_customer_placeholder') ?>">
+                            placeholder="<?= __('search_customer_placeholder') ?>" autocomplete="new-password">
                         <div id="customerResults" style="position:relative;z-index:99;background:#162333;
                                 border:1px solid rgba(255,255,255,0.1);border-radius:8px;
                                 margin-top:4px;display:none;max-height:200px;overflow-y:auto;">

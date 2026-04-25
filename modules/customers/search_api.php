@@ -42,7 +42,7 @@ $stmt = $pdo->prepare("
            currency,
            payment_due_days
     FROM   customers
-    WHERE  is_active = 1 AND {$whereSql}
+    WHERE  {$whereSql}
     ORDER  BY first_name
     LIMIT  10
 ");
@@ -52,8 +52,12 @@ $customers = $stmt->fetchAll(PDO::FETCH_ASSOC);
 $targetCurrency = getCurrentCurrency();
 
 foreach ($customers as &$c) {
-    if ($c['total_debt'] > 0) {
-        $c['total_debt'] = round(convertCurrency((float) $c['total_debt'], $c['currency'] ?? 'USD', $targetCurrency), 2);
+    $debtVal = (float) $c['total_debt'];
+    if (abs($debtVal) > 0.001) {
+        $converted = convertCurrency($debtVal, $c['currency'] ?? 'USD', $targetCurrency);
+        $c['total_debt'] = $converted !== null ? round($converted, 2) : round($debtVal, 2);
+    } else {
+        $c['total_debt'] = 0.00;
     }
 }
 

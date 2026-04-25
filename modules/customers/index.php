@@ -59,33 +59,33 @@ require_once dirname(__DIR__, 2) . '/core/layout_header.php';
 <!-- İstatistik Kartları -->
 <div class="stat-cards">
     <div class="stat-card" onclick="window.location.href='index.php'" style="cursor:pointer;"
-        title="Tüm Müşterileri Listele">
+        title="<?= __('list_all_customers') ?>">
         <div class="stat-icon blue"><i class="bi bi-people"></i></div>
         <div>
-            <div class="stat-label">Toplam Müşteri</div>
+            <div class="stat-label"><?= __('total_customers') ?></div>
             <div class="stat-value"><?= (int) $stats['total'] ?></div>
         </div>
     </div>
     <div class="stat-card" onclick="window.location.href='index.php?debt=has_debt'" style="cursor:pointer;"
-        title="Borçlu Müşterileri Listele">
+        title="<?= __('list_debtor_customers') ?>">
         <div class="stat-icon orange"><i class="bi bi-person-exclamation"></i></div>
         <div>
-            <div class="stat-label">Borçlu Müşteri</div>
+            <div class="stat-label"><?= __('debtor_customers') ?></div>
             <div class="stat-value"><?= (int) $stats['with_debt'] ?></div>
         </div>
     </div>
     <div class="stat-card" onclick="window.location.href='index.php?debt=has_credit'" style="cursor:pointer;"
-        title="Alacaklı Müşterileri Listele">
+        title="<?= __('list_creditor_customers') ?>">
         <div class="stat-icon green"><i class="bi bi-person-check"></i></div>
         <div>
-            <div class="stat-label">Alacaklı Müşteri</div>
+            <div class="stat-label"><?= __('creditor_customers') ?></div>
             <div class="stat-value"><?= (int) $stats['with_credit'] ?></div>
         </div>
     </div>
     <div class="stat-card" style="cursor:default;">
         <div class="stat-icon red"><i class="bi bi-credit-card"></i></div>
         <div>
-            <div class="stat-label">Toplam Borç</div>
+            <div class="stat-label"><?= __('total_debt') ?></div>
             <div class="stat-value" style="font-size:16px;"><?= formatMoney((float) $totalDebt) ?></div>
         </div>
     </div>
@@ -93,7 +93,7 @@ require_once dirname(__DIR__, 2) . '/core/layout_header.php';
         <div class="stat-icon purple" style="background:rgba(139,92,246,0.15); color:#8b5cf6;"><i
                 class="bi bi-wallet2"></i></div>
         <div>
-            <div class="stat-label">Toplam Alacak</div>
+            <div class="stat-label"><?= __('total_credit') ?></div>
             <div class="stat-value" style="font-size:16px;"><?= formatMoney((float) $totalCredit) ?></div>
         </div>
     </div>

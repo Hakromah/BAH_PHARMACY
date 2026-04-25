@@ -293,97 +293,173 @@ $showFlash = (get('flash') === '1');
     ?>
 
     <style>
-        /* Ekran ve Yazıcı Düzenlemeleri */
-        @media print {
+        /* ── Invoice Paper (Screen) ── */
+        .invoice-wrapper {
+            max-width: 800px;
+            margin: 0 auto 40px auto;
+        }
 
-            header,
-            .sidebar,
-            .topbar,
-            .btn-accent,
-            .btn-outline-secondary,
-            .nav-label,
-            .sidebar-toggle,
-            .d-print-none,
-            .flash-success {
+        .report-paper {
+            background: #ffffff;
+            border-radius: 6px;
+            box-shadow: 0 2px 20px rgba(0,0,0,0.10);
+            padding: 48px 56px;
+            min-height: 600px;
+            font-size: <?= (int) ($tpl['settings']['font_size'] ?? 14) ?>px;
+            line-height: 1.65;
+            color: #1e293b;
+        }
+
+        /* Logo */
+        .report-logo {
+            width: 80px;
+            height: 80px;
+            max-width: 80px;
+            max-height: 80px;
+            object-fit: contain;
+            display: block;
+        }
+
+        /* Section spacing */
+        .section-box {
+            margin-bottom: 28px;
+        }
+
+        /* Header divider */
+        #section-logo_header {
+            margin-bottom: 32px;
+            padding-bottom: 24px;
+            border-bottom: 2px solid #e2e8f0;
+        }
+
+        /* Customer / meta band */
+        #section-customer_meta {
+            background: #f8fafc;
+            border-radius: 6px;
+            padding: 20px 24px;
+            margin-bottom: 28px;
+        }
+
+        /* Items table */
+        .inv-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 0;
+        }
+
+        .inv-table thead tr {
+            background: #1e3a5f;
+        }
+
+        .inv-table thead th {
+            color: #ffffff !important;
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            padding: 11px 14px;
+            border: none;
+        }
+
+        .inv-table tbody tr {
+            border-bottom: 1px solid #f0f4f8;
+        }
+
+        .inv-table tbody tr:last-child {
+            border-bottom: none;
+        }
+
+        .inv-table tbody td {
+            padding: 11px 14px;
+            font-size: 13px;
+            color: #334155;
+            vertical-align: middle;
+        }
+
+        .inv-table tbody tr:nth-child(even) {
+            background: #f8fafc;
+        }
+
+        /* Summary totals */
+        .summary-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .summary-table td {
+            padding: 8px 12px;
+            font-size: 13px;
+            border: none;
+        }
+
+        .summary-table .total-row td {
+            font-size: 15px;
+            font-weight: 700;
+            color: #0f172a;
+            border-top: 2px solid #e2e8f0;
+            padding-top: 12px;
+        }
+
+        /* Print styles */
+        @media print {
+            header, .sidebar, .topbar,
+            .btn-accent, .btn-outline-secondary,
+            .nav-label, .sidebar-toggle,
+            .d-print-none, .flash-success {
                 display: none !important;
             }
 
             #content {
                 margin: 0 !important;
                 width: 100% !important;
-                border: none !important;
                 background: white !important;
                 overflow: visible !important;
             }
 
-            body,
-            html {
+            body, html {
                 background: white !important;
                 overflow: visible !important;
                 height: auto !important;
             }
 
-            .page-content {
-                .page-content {
-                    padding: 0 !important;
-                }
+            .page-content { padding: 0 !important; }
+            .panel { border: none !important; box-shadow: none !important; margin: 0 !important; }
 
-                .panel {
-                    border: none !important;
-                    box-shadow: none !important;
-                    margin: 0 !important;
-                }
-
-                @page {
-                    size: A4 portrait;
-                    margin: 15mm;
-                }
+            @page {
+                size: A4 portrait;
+                margin: 14mm 16mm;
             }
 
+            .invoice-wrapper { max-width: 100%; margin: 0; }
+
             .report-paper {
-                background: white;
-                padding: 40px;
-                color: #333;
-                font-size:
-                    <?= (int) ($tpl['settings']['font_size'] ?? 14) ?>
-                    px;
-                line-height: 1.6;
-                width: 210mm;
-                min-height: 297mm;
-                margin: 0 auto;
-                box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
-                border-radius: 4px;
+                box-shadow: none;
+                border-radius: 0;
+                padding: 0;
+                min-height: unset;
             }
 
             .report-logo {
-                width: 90px !important;
-                height: 90px !important;
-                max-width: 90px !important;
-                max-height: 90px !important;
-                object-fit: contain;
-                display: block;
-                margin: 0;
+                width: 72px !important;
+                height: 72px !important;
+                max-width: 72px !important;
+                max-height: 72px !important;
             }
 
-            .section-box {
-                margin-bottom: 35px;
-            }
+            .section-box { margin-bottom: 22px !important; }
+            #section-logo_header { margin-bottom: 22px; padding-bottom: 16px; }
+            #section-customer_meta { padding: 14px 16px; }
 
-            .inv-table th {
-                background: #f8fafc !important;
-                color: #475569 !important;
-                padding: 12px;
-                font-size: 0.85em;
-            }
+            .inv-table thead tr { background: #1e3a5f !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            .inv-table thead th { color: #ffffff !important; }
+            .inv-table tbody tr:nth-child(even) { background: #f8fafc !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 
-            .summary-table td {
-                padding: 8px 0;
-                border: none;
-            }
+            .summary-table td { font-size: 12px; }
+            .summary-table .total-row td { font-size: 14px; }
+        }
     </style>
 
-    <div class="row justify-content-center">
-        <div class="col-lg-10">
+    <div class="invoice-wrapper">
 
             <?php if ($showFlash): ?>
                 <div class="alert alert-success d-print-none mb-4 shadow-sm border-0 d-flex align-items-center">
@@ -520,10 +596,20 @@ $showFlash = (get('flash') === '1');
                                                     -<?= formatMoney($sale['total_amount'] - $sale['final_amount']) ?></td>
                                             </tr>
                                         <?php endif; ?>
-                                        <tr class="border-top">
-                                            <td class="fw-bold fs-5"><?= mb_strtoupper(__('total'), 'UTF-8') ?></td>
-                                            <td class="text-end fw-bold fs-5"><?= formatMoney((float) $sale['final_amount']) ?></td>
+                                        <tr class="total-row">
+                                            <td><?= mb_strtoupper(__('total'), 'UTF-8') ?></td>
+                                            <td class="text-end"><?= formatMoney((float) $sale['final_amount']) ?></td>
                                         </tr>
+                                        <?php if ($sale['paid_amount'] > 0): ?>
+                                            <tr>
+                                                <td class="text-success small fw-bold">
+                                                    <?= mb_strtoupper(__('paid_amount'), 'UTF-8') ?>
+                                                </td>
+                                                <td class="text-end text-success fw-bold">
+                                                    <?= formatMoney((float) $sale['paid_amount']) ?>
+                                                </td>
+                                            </tr>
+                                        <?php endif; ?>
                                         <?php if ($sale['remaining_amount'] > 0): ?>
                                             <tr>
                                                 <td class="text-danger small fw-bold">
@@ -554,6 +640,5 @@ $showFlash = (get('flash') === '1');
                     echo '</div>';
                 endforeach; ?>
             </div>
-        </div>
     </div>
     <?php require_once dirname(__DIR__, 2) . '/core/layout_footer.php'; ?>

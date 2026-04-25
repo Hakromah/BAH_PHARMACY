@@ -17,7 +17,15 @@ $where = ['1=1'];
 $params = [];
 
 if ($search !== '') {
-    $gSearch = buildGoogleSearchQuery(['p.name', 'p.barcode', 'p.sku'], $search, 'psch');
+    $searchFields = [
+        'p.name',
+        'p.barcode',
+        'p.sku',
+        'p.dosage_form',
+        'c.name',
+        "(CASE WHEN p.stock_quantity <= 0 THEN '" . __('out_of_stock') . "' WHEN p.stock_quantity <= p.critical_stock THEN '" . __('critical') . "' ELSE '" . __('sufficient') . "' END)"
+    ];
+    $gSearch = buildGoogleSearchQuery($searchFields, $search, 'psch');
     if (!empty($gSearch['sql'])) {
         $where[] = $gSearch['sql'];
         $params = array_merge($params, $gSearch['params']);
@@ -31,6 +39,8 @@ if ($stockFilter === 'low') {
     $where[] = 'p.stock_quantity > 0 AND p.stock_quantity <= p.critical_stock';
 } elseif ($stockFilter === 'out') {
     $where[] = 'p.stock_quantity <= 0';
+} elseif ($stockFilter === 'sufficient') {
+    $where[] = 'p.stock_quantity > p.critical_stock';
 }
 
 $whereStr = implode(' AND ', $where);
@@ -115,21 +125,22 @@ require_once dirname(__DIR__, 2) . '/core/layout_header.php';
 <!-- Filtre & Arama Paneli -->
 <div class="panel mb-4">
     <div class="panel-body">
-        <form method="GET" action="index.php" class="row g-3 align-items-end">
+        <form method="GET" action="index.php" class="row g-3 align-items-end" id="product-form">
             <!-- Arama -->
             <div class="col-md-4">
                 <label class="form-label-dark">
                     <?= __('search') ?>
                 </label>
-                <input type="text" name="search" class="form-control-dark" placeholder="<?= __('search_product') ?>"
-                    value="<?= e($search) ?>">
+                <input type="text" name="search" id="search-input" class="form-control-dark"
+                    placeholder="Search name, barcode, form, category..." value="<?= e($search) ?>"
+                    autocomplete="off">
             </div>
             <!-- Kategori -->
             <div class="col-md-3">
                 <label class="form-label-dark">
                     <?= __('category') ?>
                 </label>
-                <select name="category_id" class="form-select-dark">
+                <select name="category_id" id="cat-select" class="form-select-dark">
                     <option value="">
                         <?= __('all') ?>
                     </option>
@@ -145,9 +156,12 @@ require_once dirname(__DIR__, 2) . '/core/layout_header.php';
                 <label class="form-label-dark">
                     <?= __('status') ?>
                 </label>
-                <select name="stock" class="form-select-dark">
+                <select name="stock" id="status-select" class="form-select-dark">
                     <option value="" <?= $stockFilter === '' ? 'selected' : '' ?>>
                         <?= __('all') ?>
+                    </option>
+                    <option value="sufficient" <?= $stockFilter === 'sufficient' ? 'selected' : '' ?>>
+                        <?= __('sufficient') ?>
                     </option>
                     <option value="low" <?= $stockFilter === 'low' ? 'selected' : '' ?>>
                         <?= __('critical') ?>
@@ -328,3 +342,71 @@ require_once dirname(__DIR__, 2) . '/core/layout_header.php';
 </div>
 
 <?php require_once dirname(__DIR__, 2) . '/core/layout_footer.php'; ?>
+
+<script>
+(function () {
+    const form   = document.getElementById('product-form');
+    const search = document.getElementById('search-input');
+    const cat    = document.getElementById('cat-select');
+    const status = document.getElementById('status-select');
+
+    if (!form) return;
+
+    // Find the tbody and the count badge to update in-place
+    const tbody = document.querySelector('.table-dark-custom tbody');
+    const badge = document.querySelector('.panel-header .badge');
+
+    let timer;
+
+    function fetchResults() {
+        const params = new URLSearchParams({
+            search:      search ? search.value : '',
+            category_id: cat    ? cat.value    : '',
+            stock:       status ? status.value : ''
+        });
+
+        fetch('index.php?' + params.toString())
+            .then(function (res) { return res.text(); })
+            .then(function (html) {
+                const parser = new DOMParser();
+                const doc    = parser.parseFromString(html, 'text/html');
+
+                // Swap only the table body
+                const newTbody = doc.querySelector('.table-dark-custom tbody');
+                if (tbody && newTbody) {
+                    tbody.innerHTML = newTbody.innerHTML;
+                }
+
+                // Update product count badge
+                const newBadge = doc.querySelector('.panel-header .badge');
+                if (badge && newBadge) {
+                    badge.textContent = newBadge.textContent;
+                }
+            });
+    }
+
+    // Debounce helper — keeps cursor in the input
+    function debounce(fn, delay) {
+        clearTimeout(timer);
+        timer = setTimeout(fn, delay);
+    }
+
+    // Prevent normal form submission to keep cursor focus
+    form.addEventListener('submit', function(e) {
+        e.preventDefault();
+        fetchResults();
+    });
+
+    // Auto-submit on typing (300 ms debounce) using fetch
+    if (search) {
+        search.addEventListener('input', function () {
+            debounce(function () { fetchResults(); }, 300);
+        });
+    }
+
+    // Instant submit on dropdown changes using fetch
+    [cat, status].forEach(function (el) {
+        if (el) el.addEventListener('change', function () { fetchResults(); });
+    });
+})();
+</script>
