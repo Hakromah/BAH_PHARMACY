@@ -373,6 +373,8 @@ require_once dirname(__DIR__, 2) . '/core/layout_header.php';
 <?php if (!empty($dailySales)): ?>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <script>
+        Chart.defaults.color = 'rgba(255, 255, 255, 0.6)';
+        Chart.defaults.borderColor = 'rgba(255, 255, 255, 0.05)';
         const labels = <?= $chartLabels ?>;
         const revenueData = <?= $chartRevenue ?>;
         const countsData = <?= $chartCount ?>;

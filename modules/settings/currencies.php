@@ -276,6 +276,8 @@ require_once dirname(__DIR__, 2) . '/core/layout_header.php';
 
             <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
             <script>
+                Chart.defaults.color = 'rgba(255, 255, 255, 0.6)';
+                Chart.defaults.borderColor = 'rgba(255, 255, 255, 0.05)';
                 const rLabels = <?= json_encode(array_reverse(array_map(fn($r) => date('d.m', strtotime($r['effective_date'])), $rateHistory))) ?>;
                 const rValues = <?= json_encode(array_reverse(array_map(fn($r) => (float) $r['rate_to_usd'], $rateHistory))) ?>;
 

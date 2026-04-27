@@ -2,7 +2,7 @@
 /**
  * BAH Eczane Yönetim Sistemi - Yapılandırma Dosyası
  * Oluşturulma: 2026-04-21 18:26:26
- * 
+ *
  * DİKKAT: Bu dosyayı web üzerinden erişilebilir bir yere koymayın.
  * .htaccess ile erişim kapalıdır.
  */
@@ -17,7 +17,7 @@ date_default_timezone_set('Europe/Istanbul');
 
 // Veritabanı ayarları
 define('DB_HOST', 'localhost');
-define('DB_PORT', '3306');
+define('DB_PORT', '3307');
 define('DB_NAME', 'bah_pharmacy');
 define('DB_USER', 'root');
 define('DB_PASS', base64_decode(''));

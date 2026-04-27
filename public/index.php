@@ -201,8 +201,8 @@ require_once dirname(__DIR__) . '/core/layout_header.php';
                             class="bi bi-box-seam me-2"></i>
                         <?= __('new_product') ?>
                     </a>
-                    <a href="<?= BASE_URL ?>/modules/customers/form.php" class="btn btn-outline-secondary" style="border-color:#8b5cf6; color:#8b5cf6;"><i
-                            class="bi bi-person-plus me-2"></i>
+                    <a href="<?= BASE_URL ?>/modules/customers/form.php" class="btn btn-outline-secondary"
+                        style="border-color:#8b5cf6; color:#8b5cf6;"><i class="bi bi-person-plus me-2"></i>
                         <?= __('new_customer') ?>
                     </a>
                 </div>
@@ -356,6 +356,8 @@ require_once dirname(__DIR__) . '/core/layout_header.php';
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script>
+    Chart.defaults.color = 'rgba(255, 255, 255, 0.6)';
+    Chart.defaults.borderColor = 'rgba(255, 255, 255, 0.05)';
     const chartOpts = { responsive: true, maintainAspectRatio: false };
 
     // 7 Günlük Satışlar
@@ -415,3 +417,4 @@ require_once dirname(__DIR__) . '/core/layout_header.php';
 </script>
 
 <?php require_once dirname(__DIR__) . '/core/layout_footer.php'; ?>
+

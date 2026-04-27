@@ -650,3 +650,13 @@ label.form-label-dark {
         border: none !important;
     }
 }
+/* -----------------------------------------------
+   18. Koyu Tema Metin Duzeltmeleri
+----------------------------------------------- */
+.text-muted {
+    color: var(--text-muted) !important;
+}
+.table-dark-custom td {
+    color: var(--text-primary) !important;
+}
+
