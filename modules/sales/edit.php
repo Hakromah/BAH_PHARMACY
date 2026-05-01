@@ -155,9 +155,9 @@ if ($sale['customer_id'] > 0) {
 
 // Sepetteki kalemleri çek ve JSON olarak encode et
 $stmtItems = $pdo->prepare("
-    SELECT si.*, p.name, p.unit, p.stock_quantity 
-    FROM sale_items si 
-    JOIN products p ON si.product_id = p.id 
+    SELECT si.*, p.name, p.unit, p.stock_quantity
+    FROM sale_items si
+    JOIN products p ON si.product_id = p.id
     WHERE si.sale_id = ?
 ");
 $stmtItems->execute([$id]);
@@ -443,17 +443,16 @@ require_once dirname(__DIR__, 2) . '/core/layout_header.php';
                         <div class="col-sm-5">
                             <a href="javascript:history.back()" class="btn btn-outline-secondary w-100"
                                 style="padding:14px;font-size:16px;">
-                                <i class="bi bi-arrow-left me-2"></i>Vazgeç
+                                <i class="bi bi-arrow-left me-2"></i>Cancel
                             </a>
                         </div>
                         <div class="col-sm-7">
                             <button type="button" class="btn-accent w-100" style="padding:14px;font-size:16px;"
                                 onclick="submitSale()">
-                                <i class="bi bi-check-circle me-2"></i>Güncelle
+                                <i class="bi bi-check-circle me-2"></i>Update
                             </button>
                         </div>
                     </div>
-
                 </div>
             </div>
         </div><!-- /SAĞ -->

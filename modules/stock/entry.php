@@ -43,9 +43,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $pdo->beginTransaction();
         try {
             // Görsel yükleme kontrolü
-            $newImageUrl = $product['image_url'];
+            $newImage = $product['image'] ?? null;
             if (isset($_FILES['image']) && $_FILES['image']['error'] === UPLOAD_ERR_OK) {
-                // Yükleme mantığı (basitçe es geçiyoruz, form upload)
+                $ext = strtolower(pathinfo($_FILES['image']['name'], PATHINFO_EXTENSION));
+                $allowed = ['jpg', 'jpeg', 'png', 'webp'];
+                if (in_array($ext, $allowed)) {
+                    $newImage = uniqid('prod_') . '.' . $ext;
+                    move_uploaded_file($_FILES['image']['tmp_name'], dirname(__DIR__, 2) . '/storage/images/' . $newImage);
+                }
             }
 
             // Fiyat güncellenecekse
@@ -59,13 +64,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 UPDATE products 
                 SET stock_quantity = stock_quantity + :qty,
                     purchase_price = :pprice,
-                    image_url = :img
+                    image = :img
                 WHERE id = :id
             ");
             $stmtUpd->execute([
                 ':qty' => $quantity,
                 ':pprice' => $currentPurchasePrice,
-                ':img' => $newImageUrl,
+                ':img' => $newImage,
                 ':id' => $productId
             ]);
 

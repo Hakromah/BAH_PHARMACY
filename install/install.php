@@ -1,7 +1,7 @@
 <?php
 /**
  * BAH Eczane Yönetim Sistemi — Kapsamlı Kurulum Sihirbazı
- * 
+ *
  * Windows programı gibi next-next-finish mantığıyla çalışır.
  * Adımlar:
  *   1. Hoş Geldiniz & Lisans
@@ -24,7 +24,7 @@ if (file_exists(dirname(__DIR__) . '/config/config.php')) {
     a{display:inline-block;margin-top:24px;padding:12px 28px;background:#0ea5e9;color:#fff;text-decoration:none;border-radius:10px;font-weight:600;}</style></head><body>
     <div class="box"><h2>⚠️ Sistem Zaten Kurulu!</h2><p>Kurulum daha önce tamamlanmış.<br>Yeniden kurmak için <code>config/config.php</code> dosyasını silin.</p>
     <a href="../public/index.php">🚀 Sisteme Git</a>
-    <a href="update.php" style="background:#f59e0b;margin-left:8px;">🔄 Güncelle</a></div></body></html>');
+    <a href="update.php" style="background:#f59e0b;margin-left:8px;">🔄 Update</a></div></body></html>');
 }
 
 // ── Mevcut adımı belirle ─────────────────────────────
@@ -213,7 +213,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $step === 4) {
             $result['steps'][] = '✅ Örnek kategoriler eklendi';
 
             // 3.5️⃣ Varsayılan para birimleri
-            $pdo->exec("INSERT IGNORE INTO `currencies` (`code`,`symbol`,`name`,`position`,`decimal_sep`,`thousand_sep`,`is_default`) VALUES 
+            $pdo->exec("INSERT IGNORE INTO `currencies` (`code`,`symbol`,`name`,`position`,`decimal_sep`,`thousand_sep`,`is_default`) VALUES
                 ('USD', '$', 'US Dollar', 'before', '.', ',', 1),
                 ('TRY', '₺', 'Turkish Lira', 'after', ',', '.', 0),
                 ('EUR', '€', 'Euro', 'before', ',', '.', 0)

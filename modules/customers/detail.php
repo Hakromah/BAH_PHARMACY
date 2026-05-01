@@ -148,8 +148,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     ->execute([':amt' => $payment['amount'], ':cid' => $id]);
 
                 if ($payment['sale_id']) {
-                    $pdo->prepare("UPDATE sales SET paid_amount = paid_amount - :amt, remaining_amount = remaining_amount + :amt WHERE id = :sid")
-                        ->execute([':amt' => $payment['amount'], ':sid' => $payment['sale_id']]);
+                    $pdo->prepare("UPDATE sales SET paid_amount = paid_amount - :amt1, remaining_amount = remaining_amount + :amt2 WHERE id = :sid")
+                        ->execute([':amt1' => $payment['amount'], ':amt2' => $payment['amount'], ':sid' => $payment['sale_id']]);
                 }
 
                 $pdo->prepare("DELETE FROM payments WHERE id = :pid")->execute([':pid' => $pid_to_del]);
@@ -194,8 +194,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $diff = $amt - $oldP['amount'];
                 $pdo->prepare("UPDATE customers SET total_debt = total_debt - :diff WHERE id = :cid")->execute([':diff' => $diff, ':cid' => $id]);
                 if ($oldP['sale_id']) {
-                    $pdo->prepare("UPDATE sales SET paid_amount = paid_amount + :diff, remaining_amount = remaining_amount - :diff WHERE id = :sid")
-                        ->execute([':diff' => $diff, ':sid' => $oldP['sale_id']]);
+                    $pdo->prepare("UPDATE sales SET paid_amount = paid_amount + :diff1, remaining_amount = remaining_amount - :diff2 WHERE id = :sid")
+                        ->execute([':diff1' => $diff, ':diff2' => $diff, ':sid' => $oldP['sale_id']]);
                 }
                 $pdo->prepare("UPDATE payments SET amount = :a, method = :m, note = :n WHERE id = :i")
                     ->execute([':a' => $amt, ':m' => $method, ':n' => $note, ':i' => $pid]);
