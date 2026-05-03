@@ -191,7 +191,14 @@ require_once dirname(__DIR__, 2) . '/core/layout_header.php';
                 <?= count($products) ?>
             </span>
         </h5>
-        <div class="d-flex gap-2">
+        <div class="d-flex gap-2 align-items-center">
+            <form id="batchDeleteForm" method="POST" action="delete_multiple.php" class="m-0" onsubmit="return confirm('<?= __('confirm_delete') ?? 'Are you sure you want to delete selected items?' ?>');">
+                <input type="hidden" name="csrf_token" value="<?= e($_SESSION['csrf_token']) ?>">
+                <div id="hiddenCheckboxContainer"></div>
+                <button type="submit" id="btnBatchDelete" class="btn btn-danger d-none">
+                    <i class="bi bi-trash me-1"></i> <span id="batchDeleteCount">0</span>
+                </button>
+            </form>
             <a href="import_export.php" class="btn btn-success"><i class="bi bi-arrow-down-up me-1"></i>
                 <?= __('import_export') ?></a>
             <a href="form.php" class="btn-accent"><i class="bi bi-plus-lg"></i>
@@ -208,6 +215,9 @@ require_once dirname(__DIR__, 2) . '/core/layout_header.php';
         <table class="table-dark-custom">
             <thead>
                 <tr>
+                    <th style="width:40px;">
+                        <input type="checkbox" id="selectAll" class="form-check-input">
+                    </th>
                     <th>
                         <?= __('product_image') ?>
                     </th>
@@ -243,7 +253,7 @@ require_once dirname(__DIR__, 2) . '/core/layout_header.php';
             <tbody>
                 <?php if (empty($products)): ?>
                     <tr>
-                        <td colspan="10" class="text-center py-5" style="color:var(--text-muted);">
+                        <td colspan="11" class="text-center py-5" style="color:var(--text-muted);">
                             <i class="bi bi-inbox" style="font-size:36px;display:block;margin-bottom:8px;"></i>
                             <?= __('no_data') ?>
                         </td>
@@ -255,6 +265,9 @@ require_once dirname(__DIR__, 2) . '/core/layout_header.php';
                         $rowCls = $isOut ? 'row-critical' : ($isLow ? 'row-low' : '');
                         ?>
                         <tr class="<?= $rowCls ?>">
+                            <td>
+                                <input type="checkbox" value="<?= $p['id'] ?>" class="form-check-input item-checkbox">
+                            </td>
                             <td>
                                 <?php if ($p['image'] && file_exists(dirname(__DIR__, 2) . '/storage/images/' . $p['image'])): ?>
                                     <img src="<?= BASE_URL ?>/storage/images/<?= e($p['image']) ?>" class="product-img"
@@ -382,8 +395,62 @@ require_once dirname(__DIR__, 2) . '/core/layout_header.php';
                 if (badge && newBadge) {
                     badge.textContent = newBadge.textContent;
                 }
+                
+                // Re-bind checkbox events on new table body
+                bindCheckboxes();
             });
     }
+
+    function bindCheckboxes() {
+        const selectAll = document.getElementById('selectAll');
+        const checkboxes = document.querySelectorAll('.item-checkbox');
+        const btnBatchDelete = document.getElementById('btnBatchDelete');
+        const batchDeleteCount = document.getElementById('batchDeleteCount');
+        const hiddenContainer = document.getElementById('hiddenCheckboxContainer');
+
+        if (!selectAll || !btnBatchDelete) return;
+
+        function updateBatchButton() {
+            let selectedCount = 0;
+            hiddenContainer.innerHTML = '';
+            checkboxes.forEach(cb => {
+                if (cb.checked) {
+                    selectedCount++;
+                    // Add hidden inputs to form so they get submitted
+                    const input = document.createElement('input');
+                    input.type = 'hidden';
+                    input.name = 'product_ids[]';
+                    input.value = cb.value;
+                    hiddenContainer.appendChild(input);
+                }
+            });
+
+            if (selectedCount > 0) {
+                batchDeleteCount.textContent = '<?= __('delete') ?> (' + selectedCount + ')';
+                btnBatchDelete.classList.remove('d-none');
+            } else {
+                btnBatchDelete.classList.add('d-none');
+            }
+            
+            selectAll.checked = (selectedCount > 0 && selectedCount === checkboxes.length);
+        }
+
+        selectAll.addEventListener('change', function() {
+            checkboxes.forEach(cb => cb.checked = selectAll.checked);
+            updateBatchButton();
+        });
+
+        checkboxes.forEach(cb => {
+            cb.addEventListener('change', updateBatchButton);
+        });
+        
+        // Initial state reset when re-binding
+        selectAll.checked = false;
+        updateBatchButton();
+    }
+
+    // Bind initially
+    bindCheckboxes();
 
     // Debounce helper — keeps cursor in the input
     function debounce(fn, delay) {
