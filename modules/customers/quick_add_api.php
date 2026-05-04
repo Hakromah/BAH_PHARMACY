@@ -41,7 +41,7 @@ if (!empty($phone)) {
     }
 }
 
-$uuid = generateUUID();
+$uuid = generateCustomerId($firstName);
 $pdo = Database::getInstance();
 
 $targetCurrency = getCurrentCurrency();
@@ -62,7 +62,9 @@ logAction('Quick customer added', "ID:{$newId} | {$firstName} {$lastName}");
 
 echo json_encode([
     'success' => true,
-    'id' => $newId,
-    'full_name' => $firstName . ' ' . $lastName,
-    'phone' => $phone,
+    'customer' => [
+        'id' => $newId,
+        'full_name' => $firstName . ' ' . $lastName,
+        'phone' => $phone,
+    ]
 ]);
