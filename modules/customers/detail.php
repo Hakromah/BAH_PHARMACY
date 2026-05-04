@@ -42,25 +42,49 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } else {
             $pdo->beginTransaction();
             try {
-                // 1. Ödeme kaydı
+                // 1. Ödeme kaydı ve Fatura kalanını güncelle
                 if ($saleId > 0) {
                     $stmtP = $pdo->prepare("INSERT INTO payments (customer_id, sale_id, amount, method, note) VALUES (:cid, :sid, :amt, :m, :n)");
                     $stmtP->execute([':cid' => $id, ':sid' => $saleId, ':amt' => $amount, ':m' => $method, ':n' => $note]);
+                    $receiptId = $pdo->lastInsertId();
+
+                    $pdo->prepare("UPDATE sales SET paid_amount = paid_amount + :amt1, remaining_amount = remaining_amount - :amt2 WHERE id = :sid")
+                        ->execute([':amt1' => $amount, ':amt2' => $amount, ':sid' => $saleId]);
                 } else {
-                    $stmtP = $pdo->prepare("INSERT INTO payments (customer_id, amount, method, note) VALUES (:cid, :amt, :m, :n)");
-                    $stmtP->execute([':cid' => $id, ':amt' => $amount, ':m' => $method, ':n' => $note]);
+                    // General payment: Auto-allocate to pending sales
+                    $pendingSales = $pdo->prepare("SELECT id, remaining_amount FROM sales WHERE customer_id = :cid AND remaining_amount > 0 ORDER BY due_date ASC, created_at ASC");
+                    $pendingSales->execute([':cid' => $id]);
+                    $salesToPay = $pendingSales->fetchAll();
+
+                    $remainingToAllocate = $amount;
+                    $receiptId = null;
+
+                    foreach ($salesToPay as $ps) {
+                        if ($remainingToAllocate <= 0) break;
+
+                        $allocateAmt = min($remainingToAllocate, (float)$ps['remaining_amount']);
+                        
+                        $stmtP = $pdo->prepare("INSERT INTO payments (customer_id, sale_id, amount, method, note) VALUES (:cid, :sid, :amt, :m, :n)");
+                        $stmtP->execute([':cid' => $id, ':sid' => $ps['id'], ':amt' => $allocateAmt, ':m' => $method, ':n' => $note]);
+                        if (!$receiptId) $receiptId = $pdo->lastInsertId();
+
+                        $pdo->prepare("UPDATE sales SET paid_amount = paid_amount + :amt1, remaining_amount = remaining_amount - :amt2 WHERE id = :sid")
+                            ->execute([':amt1' => $allocateAmt, ':amt2' => $allocateAmt, ':sid' => $ps['id']]);
+
+                        $remainingToAllocate -= $allocateAmt;
+                    }
+
+                    // If still money left (Advance)
+                    if ($remainingToAllocate > 0) {
+                        $stmtP = $pdo->prepare("INSERT INTO payments (customer_id, amount, method, note) VALUES (:cid, :amt, :m, :n)");
+                        $stmtP->execute([':cid' => $id, ':amt' => $remainingToAllocate, ':m' => $method, ':n' => $note]);
+                        if (!$receiptId) $receiptId = $pdo->lastInsertId();
+                    }
                 }
-                $receiptId = $pdo->lastInsertId();
 
                 // 2. Müşteri bakiyesi güncelle (Tahsilat borcu azaltır)
                 $pdo->prepare("UPDATE customers SET total_debt = total_debt - :amt WHERE id = :cid")
                     ->execute([':amt' => $amount, ':cid' => $id]);
-
-                // 3. Fatura ödemesi ise fatura kalanını güncelle
-                if ($saleId > 0) {
-                    $pdo->prepare("UPDATE sales SET paid_amount = paid_amount + :amt WHERE id = :sid")
-                        ->execute([':amt' => $amount, ':sid' => $saleId]);
-                }
 
                 $pdo->commit();
 
@@ -163,21 +187,46 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             setFlash('error', 'Deletion error: ' . $e->getMessage());
         }
     } elseif ($action === 'recalc_debt') {
-        // Correct calculation: Sum of all sales minus Sum of all payments
-        $stmtS = $pdo->prepare("SELECT SUM(final_amount) FROM sales WHERE customer_id = :cid");
-        $stmtS->execute([':cid' => $id]);
-        $totalSales = (float) $stmtS->fetchColumn();
+        $pdo->beginTransaction();
+        try {
+            // Correct calculation: Sum of all sales minus Sum of all payments
+            $stmtS = $pdo->prepare("SELECT SUM(final_amount) FROM sales WHERE customer_id = :cid");
+            $stmtS->execute([':cid' => $id]);
+            $totalSales = (float) $stmtS->fetchColumn();
 
-        $stmtP = $pdo->prepare("SELECT SUM(amount) FROM payments WHERE customer_id = :cid");
-        $stmtP->execute([':cid' => $id]);
-        $totalPayments = (float) $stmtP->fetchColumn();
+            $stmtP = $pdo->prepare("SELECT SUM(amount) FROM payments WHERE customer_id = :cid");
+            $stmtP->execute([':cid' => $id]);
+            $totalPayments = (float) $stmtP->fetchColumn();
 
-        $newDebt = $totalSales - $totalPayments;
+            $newDebt = $totalSales - $totalPayments;
 
-        $pdo->prepare("UPDATE customers SET total_debt = :d WHERE id = :cid")
-            ->execute([':d' => $newDebt, ':cid' => $id]);
+            $pdo->prepare("UPDATE customers SET total_debt = :d WHERE id = :cid")
+                ->execute([':d' => $newDebt, ':cid' => $id]);
 
-        setFlash('success', 'Customer balance repaired by scanning all records.');
+            // Heal sales remaining amounts based on total payments received
+            $allSales = $pdo->prepare("SELECT id, final_amount FROM sales WHERE customer_id = :cid ORDER BY due_date ASC, created_at ASC");
+            $allSales->execute([':cid' => $id]);
+            
+            $pool = $totalPayments;
+            foreach ($allSales->fetchAll() as $s) {
+                $final = (float) $s['final_amount'];
+                if ($pool >= $final) {
+                    $paid = $final;
+                    $pool -= $final;
+                } else {
+                    $paid = $pool;
+                    $pool = 0;
+                }
+                $remaining = $final - $paid;
+                $pdo->prepare("UPDATE sales SET paid_amount = :p, remaining_amount = :r WHERE id = :sid")
+                    ->execute([':p' => $paid, ':r' => $remaining, ':sid' => $s['id']]);
+            }
+            $pdo->commit();
+            setFlash('success', 'Customer balance and sales statuses repaired by scanning all records.');
+        } catch (Exception $e) {
+            $pdo->rollBack();
+            setFlash('error', $e->getMessage());
+        }
         redirect(BASE_URL . '/modules/customers/detail.php?id=' . $id);
     } elseif ($action === 'edit_payment') {
         $pid = (int) post('payment_id');
