@@ -59,14 +59,22 @@ try {
     }
 
     // Sale + sale_items sil (CASCADE ile sale_items otomatik silinir)
+    // Workaround: Manually set sale_id to NULL in payments to prevent MariaDB from crashing during cascading SET NULL
+    $pdo->prepare("UPDATE payments SET sale_id = NULL WHERE sale_id = :id")->execute([':id' => $id]);
     $pdo->prepare("DELETE FROM sales WHERE id = :id")->execute([':id' => $id]);
 
     $pdo->commit();
     logAction('Sale Cancelled', __('sale_log_cancelled', $id, $sale['customer_id']));
     setFlash('success', __('sale_cancelled_success', $id));
 } catch (Exception $e) {
-    $pdo->rollBack();
-    setFlash('error', sprintf(__('cancel_error'), $e->getMessage()));
+    if ($pdo->inTransaction()) {
+        try {
+            $pdo->rollBack();
+        } catch (Exception $re) {
+            // ignore rollback errors if connection is lost
+        }
+    }
+    setFlash('error', __('error') . ': ' . $e->getMessage());
 }
 
 redirect(BASE_URL . '/modules/sales/index.php');
