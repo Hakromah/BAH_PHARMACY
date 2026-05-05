@@ -186,6 +186,71 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $pdo->rollBack();
             setFlash('error', 'Deletion error: ' . $e->getMessage());
         }
+    } elseif ($action === 'delete_multiple_history') {
+        $historyIds = $_POST['history_ids'] ?? [];
+        if (!is_array($historyIds) || empty($historyIds)) {
+            $errors[] = __('error');
+        } else {
+            $pdo->beginTransaction();
+            try {
+                $deletedSales = 0;
+                $deletedPayments = 0;
+                
+                foreach ($historyIds as $itemVal) {
+                    if (strpos($itemVal, 'sale_') === 0) {
+                        $saleId = (int) substr($itemVal, 5);
+                        $stmtS = $pdo->prepare("SELECT * FROM sales WHERE id = :sid AND customer_id = :cid");
+                        $stmtS->execute([':sid' => $saleId, ':cid' => $id]);
+                        $sale = $stmtS->fetch();
+
+                        if ($sale) {
+                            $debtToReduce = $sale['final_amount'] - $sale['paid_amount'];
+                            $pdo->prepare("UPDATE customers SET total_debt = GREATEST(0, total_debt - :amt) WHERE id = :cid")
+                                ->execute([':amt' => $debtToReduce, ':cid' => $id]);
+
+                            $items = $pdo->prepare("SELECT * FROM sale_items WHERE sale_id = :sid");
+                            $items->execute([':sid' => $saleId]);
+                            while ($item = $items->fetch()) {
+                                $pdo->prepare("UPDATE products SET stock_quantity = stock_quantity + :qty WHERE id = :pid")
+                                    ->execute([':qty' => $item['quantity'], ':pid' => $item['product_id']]);
+                            }
+
+                            $pdo->prepare("UPDATE payments SET sale_id = NULL WHERE sale_id = :id")->execute([':id' => $saleId]);
+                            $pdo->prepare("DELETE FROM sales WHERE id = :sid")->execute([':sid' => $saleId]);
+                            $deletedSales++;
+                        }
+                    } elseif (strpos($itemVal, 'payment_') === 0) {
+                        $paymentId = (int) substr($itemVal, 8);
+                        $stmtP = $pdo->prepare("SELECT * FROM payments WHERE id = :pid AND customer_id = :cid");
+                        $stmtP->execute([':pid' => $paymentId, ':cid' => $id]);
+                        $payment = $stmtP->fetch();
+
+                        if ($payment) {
+                            $pdo->prepare("UPDATE customers SET total_debt = total_debt + :amt WHERE id = :cid")
+                                ->execute([':amt' => $payment['amount'], ':cid' => $id]);
+
+                            if ($payment['sale_id']) {
+                                $pdo->prepare("UPDATE sales SET paid_amount = paid_amount - :amt1, remaining_amount = remaining_amount + :amt2 WHERE id = :sid")
+                                    ->execute([':amt1' => $payment['amount'], ':amt2' => $payment['amount'], ':sid' => $payment['sale_id']]);
+                            }
+
+                            $pdo->prepare("DELETE FROM payments WHERE id = :pid")->execute([':pid' => $paymentId]);
+                            $deletedPayments++;
+                        }
+                    }
+                }
+                $pdo->commit();
+                
+                if ($deletedSales > 0 || $deletedPayments > 0) {
+                    setFlash('success', "{$deletedSales} sales and {$deletedPayments} payments deleted successfully.");
+                    logAction('History Batch Delete', "Deleted {$deletedSales} sales and {$deletedPayments} payments for Customer #{$id}.");
+                }
+            } catch (Exception $e) {
+                $pdo->rollBack();
+                setFlash('error', 'Deletion error: ' . $e->getMessage());
+            }
+            redirect(BASE_URL . '/modules/customers/detail.php?id=' . $id);
+        }
     } elseif ($action === 'recalc_debt') {
         $pdo->beginTransaction();
         try {
@@ -450,11 +515,21 @@ require_once dirname(__DIR__, 2) . '/core/layout_header.php';
     <div class="col-12">
         <div class="panel">
             <div class="panel-header d-flex justify-content-between align-items-center flex-wrap gap-2">
-                <h5 class="mb-0"><i
-                        class="bi bi-clock-history me-2"></i><?= __('transaction_history') ?? 'İşlem Geçmişi' ?>
-                    <span class="badge bg-secondary ms-2" style="font-size:12px;"
-                        id="recordCountBadge"><?= count($history) ?></span>
-                </h5>
+                <div class="d-flex align-items-center gap-3">
+                    <h5 class="mb-0"><i
+                            class="bi bi-clock-history me-2"></i><?= __('transaction_history') ?? 'İşlem Geçmişi' ?>
+                        <span class="badge bg-secondary ms-2" style="font-size:12px;"
+                            id="recordCountBadge"><?= count($history) ?></span>
+                    </h5>
+                    <form id="batchDeleteForm" method="POST" action="detail.php?id=<?= $id ?>" class="m-0" onsubmit="return confirm('<?= __('confirm_delete') ?? 'Are you sure you want to delete selected items?' ?>');">
+                        <input type="hidden" name="csrf_token" value="<?= e($_SESSION['csrf_token']) ?>">
+                        <input type="hidden" name="action" value="delete_multiple_history">
+                        <div id="hiddenCheckboxContainer"></div>
+                        <button type="submit" id="btnBatchDelete" class="btn btn-danger btn-sm d-none">
+                            <i class="bi bi-trash me-1"></i> <span id="batchDeleteCount">0</span>
+                        </button>
+                    </form>
+                </div>
                 <!-- Dinamik Arama & Tarih Filtresi -->
                 <div class="d-flex gap-2">
                     <input type="text" id="histSearchBox" class="form-control-dark form-control-sm"
@@ -465,10 +540,13 @@ require_once dirname(__DIR__, 2) . '/core/layout_header.php';
                         title="<?= __('end_date') ?>">
                 </div>
             </div>
-            <div class="table-responsive">
+            <div class="table-responsive table-scrollable">
                 <table class="table-dark-custom align-middle" id="historyTable">
                     <thead>
                         <tr>
+                            <th style="width:40px;">
+                                <input type="checkbox" id="selectAll" class="form-check-input">
+                            </th>
                             <th><?= __('date') ?></th>
                             <th><?= __('type') ?></th>
                             <th><?= __('description') ?></th>
@@ -480,7 +558,7 @@ require_once dirname(__DIR__, 2) . '/core/layout_header.php';
                     <tbody>
                         <?php if (empty($history)): ?>
                             <tr>
-                                <td colspan="6" class="text-center py-5 text-muted"><?= __('no_data') ?></td>
+                                <td colspan="7" class="text-center py-5 text-muted"><?= __('no_data') ?></td>
                             </tr>
                         <?php else: ?>
                             <?php foreach ($history as $row):
@@ -491,6 +569,9 @@ require_once dirname(__DIR__, 2) . '/core/layout_header.php';
                                     <!-- SATIŞ VEYA BORÇ SATIRI -->
                                     <tr class="hist-row <?= $item['remaining_amount'] > 0 ? 'row-low' : '' ?>"
                                         data-date="<?= date('Y-m-d', strtotime($item['created_at'])) ?>">
+                                        <td>
+                                            <input type="checkbox" value="sale_<?= $item['id'] ?>" class="form-check-input item-checkbox">
+                                        </td>
                                         <td style="font-size:12px; width:130px;">
                                             <?= date('d.m.Y H:i', strtotime($item['created_at'])) ?>
                                         </td>
@@ -580,6 +661,9 @@ require_once dirname(__DIR__, 2) . '/core/layout_header.php';
                                     <!-- TAHSİLAT VEYA ÖDEME SATIRI -->
                                     <?php [$mlabel, $mcls] = $methodLabels[$item['method']] ?? [$item['method'], 'badge-stock-low']; ?>
                                     <tr class="hist-row" data-date="<?= date('Y-m-d', strtotime($item['created_at'])) ?>">
+                                        <td>
+                                            <input type="checkbox" value="payment_<?= $item['id'] ?>" class="form-check-input item-checkbox">
+                                        </td>
                                         <td style="font-size:12px; width:130px;">
                                             <?= date('d.m.Y H:i', strtotime($item['created_at'])) ?>
                                         </td>
@@ -873,6 +957,56 @@ require_once dirname(__DIR__, 2) . '/core/layout_header.php';
         document.getElementById('ep_note').value = note;
         new bootstrap.Modal(document.getElementById('editPaymentModal')).show();
     }
+
+    (function() {
+        function bindCheckboxes() {
+            const selectAll = document.getElementById('selectAll');
+            const checkboxes = document.querySelectorAll('.item-checkbox');
+            const btnBatchDelete = document.getElementById('btnBatchDelete');
+            const batchDeleteCount = document.getElementById('batchDeleteCount');
+            const hiddenContainer = document.getElementById('hiddenCheckboxContainer');
+
+            if (!selectAll || !btnBatchDelete) return;
+
+            function updateBatchButton() {
+                let selectedCount = 0;
+                hiddenContainer.innerHTML = '';
+                checkboxes.forEach(cb => {
+                    if (cb.checked) {
+                        selectedCount++;
+                        const input = document.createElement('input');
+                        input.type = 'hidden';
+                        input.name = 'history_ids[]';
+                        input.value = cb.value;
+                        hiddenContainer.appendChild(input);
+                    }
+                });
+
+                if (selectedCount > 0) {
+                    batchDeleteCount.textContent = '<?= __('delete') ?> (' + selectedCount + ')';
+                    btnBatchDelete.classList.remove('d-none');
+                } else {
+                    btnBatchDelete.classList.add('d-none');
+                }
+                
+                selectAll.checked = (selectedCount > 0 && selectedCount === checkboxes.length);
+            }
+
+            selectAll.addEventListener('change', function() {
+                checkboxes.forEach(cb => cb.checked = selectAll.checked);
+                updateBatchButton();
+            });
+
+            checkboxes.forEach(cb => {
+                cb.addEventListener('change', updateBatchButton);
+            });
+            
+            selectAll.checked = false;
+            updateBatchButton();
+        }
+
+        document.addEventListener('DOMContentLoaded', bindCheckboxes);
+    })();
 </script>
 
 <?php require_once dirname(__DIR__, 2) . '/core/layout_footer.php'; ?>

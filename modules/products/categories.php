@@ -121,71 +121,73 @@ require_once dirname(__DIR__, 2) . '/core/layout_header.php';
                     </span>
                 </h5>
             </div>
-            <table class="table-dark-custom">
-                <thead>
-                    <tr>
-                        <th>#</th>
-                        <th>
-                            <?= __('category_name') ?>
-                        </th>
-                        <th>
-                            <?= __('description') ?>
-                        </th>
-                        <th>
-                            <?= __('products') ?>
-                        </th>
-                        <th>
-                            <?= __('actions') ?>
-                        </th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php if (empty($categories)): ?>
+            <div class="table-responsive table-scrollable">
+                <table class="table-dark-custom">
+                    <thead>
                         <tr>
-                            <td colspan="5" class="text-center py-4 text-muted">
-                                <?= __('no_data') ?>
-                            </td>
+                            <th>#</th>
+                            <th>
+                                <?= __('category_name') ?>
+                            </th>
+                            <th>
+                                <?= __('description') ?>
+                            </th>
+                            <th>
+                                <?= __('products') ?>
+                            </th>
+                            <th>
+                                <?= __('actions') ?>
+                            </th>
                         </tr>
-                    <?php else: ?>
-                        <?php foreach ($categories as $c): ?>
+                    </thead>
+                    <tbody>
+                        <?php if (empty($categories)): ?>
                             <tr>
-                                <td>
-                                    <?= $c['id'] ?>
-                                </td>
-                                <td><strong>
-                                        <?= e($c['name']) ?>
-                                    </strong></td>
-                                <td style="color:var(--text-muted);font-size:13px;">
-                                    <?= e($c['description'] ?? '—') ?>
-                                </td>
-                                <td>
-                                    <span class="badge-stock-ok">
-                                        <?= (int) $c['product_count'] ?>
-                                        <?= __('products') ?>
-                                    </span>
-                                </td>
-                                <td>
-                                    <div class="d-flex gap-1">
-                                        <a href="categories.php?edit=<?= $c['id'] ?>" class="btn-sm-icon btn-edit"
-                                            title="<?= __('edit') ?>">
-                                            <i class="bi bi-pencil"></i>
-                                        </a>
-                                        <form method="POST" action="categories.php" style="display:inline;">
-                                            <input type="hidden" name="csrf_token" value="<?= e($_SESSION['csrf_token']) ?>">
-                                            <input type="hidden" name="action" value="delete">
-                                            <input type="hidden" name="cat_id" value="<?= $c['id'] ?>">
-                                            <button type="submit" class="btn-sm-icon btn-delete"
-                                                data-confirm="<?= __('confirm_delete') ?>" title="<?= __('delete') ?>">
-                                                <i class="bi bi-trash"></i>
-                                            </button>
-                                        </form>
-                                    </div>
+                                <td colspan="5" class="text-center py-4 text-muted">
+                                    <?= __('no_data') ?>
                                 </td>
                             </tr>
-                        <?php endforeach; ?>
-                    <?php endif; ?>
-                </tbody>
-            </table>
+                        <?php else: ?>
+                            <?php foreach ($categories as $c): ?>
+                                <tr>
+                                    <td>
+                                        <?= $c['id'] ?>
+                                    </td>
+                                    <td><strong>
+                                            <?= e($c['name']) ?>
+                                        </strong></td>
+                                    <td style="color:var(--text-muted);font-size:13px;">
+                                        <?= e($c['description'] ?? '—') ?>
+                                    </td>
+                                    <td>
+                                        <span class="badge-stock-ok">
+                                            <?= (int) $c['product_count'] ?>
+                                            <?= __('products') ?>
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <div class="d-flex gap-1">
+                                            <a href="categories.php?edit=<?= $c['id'] ?>" class="btn-sm-icon btn-edit"
+                                                title="<?= __('edit') ?>">
+                                                <i class="bi bi-pencil"></i>
+                                            </a>
+                                            <form method="POST" action="categories.php" style="display:inline;">
+                                                <input type="hidden" name="csrf_token" value="<?= e($_SESSION['csrf_token']) ?>">
+                                                <input type="hidden" name="action" value="delete">
+                                                <input type="hidden" name="cat_id" value="<?= $c['id'] ?>">
+                                                <button type="submit" class="btn-sm-icon btn-delete"
+                                                    data-confirm="<?= __('confirm_delete') ?>" title="<?= __('delete') ?>">
+                                                    <i class="bi bi-trash"></i>
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </td>
+                                </tr>
+                            <?php endforeach; ?>
+                        <?php endif; ?>
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
 

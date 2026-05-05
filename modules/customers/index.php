@@ -161,7 +161,7 @@ require_once dirname(__DIR__, 2) . '/core/layout_header.php';
             </span>
         </h5>
     </div>
-    <div class="table-responsive">
+    <div class="table-responsive table-scrollable">
         <table class="table-dark-custom">
             <thead>
                 <tr>

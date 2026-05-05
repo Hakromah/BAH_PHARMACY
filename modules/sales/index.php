@@ -172,17 +172,29 @@ require_once dirname(__DIR__, 2) . '/core/layout_header.php';
 
 <!-- Tablo -->
 <div class="panel">
-    <div class="panel-header">
-        <h5><i class="bi bi-receipt me-2"></i>
+    <div class="panel-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0"><i class="bi bi-receipt me-2"></i>
             <?= __('sales_list') ?><span class="badge bg-secondary ms-2">
                 <?= count($sales) ?>
             </span>
         </h5>
+        <div class="d-flex gap-2 align-items-center">
+            <form id="batchDeleteForm" method="POST" action="delete_multiple.php" class="m-0" onsubmit="return confirm('<?= __('confirm_delete') ?? 'Are you sure you want to delete selected items?' ?>');">
+                <input type="hidden" name="csrf_token" value="<?= e($_SESSION['csrf_token']) ?>">
+                <div id="hiddenCheckboxContainer"></div>
+                <button type="submit" id="btnBatchDelete" class="btn btn-danger d-none">
+                    <i class="bi bi-trash me-1"></i> <span id="batchDeleteCount">0</span>
+                </button>
+            </form>
+        </div>
     </div>
     <div class="table-responsive">
         <table class="table-dark-custom">
             <thead>
                 <tr>
+                    <th style="width:40px;">
+                        <input type="checkbox" id="selectAll" class="form-check-input">
+                    </th>
                     <th>#</th>
                     <th>
                         <?= __('date') ?>
@@ -213,7 +225,7 @@ require_once dirname(__DIR__, 2) . '/core/layout_header.php';
             <tbody>
                 <?php if (empty($sales)): ?>
                     <tr>
-                        <td colspan="9" class="text-center py-5" style="color:var(--text-muted);">
+                        <td colspan="10" class="text-center py-5" style="color:var(--text-muted);">
                             <i class="bi bi-receipt" style="font-size:36px;display:block;margin-bottom:8px;"></i>
                             <?= __('no_data') ?>
                         </td>
@@ -221,6 +233,9 @@ require_once dirname(__DIR__, 2) . '/core/layout_header.php';
                 <?php else: ?>
                     <?php foreach ($sales as $s): ?>
                         <tr class="<?= $s['remaining_amount'] > 0 ? 'row-low' : '' ?>">
+                            <td>
+                                <input type="checkbox" value="<?= $s['id'] ?>" class="form-check-input item-checkbox">
+                            </td>
                             <td style="color:var(--text-muted);font-size:12px;">#
                                 <?= $s['id'] ?>
                             </td>
@@ -326,6 +341,56 @@ require_once dirname(__DIR__, 2) . '/core/layout_header.php';
                 document.getElementById('viewTxTitle').innerText = 'Satış / Fatura #' + id;
             });
     }
+
+    (function() {
+        function bindCheckboxes() {
+            const selectAll = document.getElementById('selectAll');
+            const checkboxes = document.querySelectorAll('.item-checkbox');
+            const btnBatchDelete = document.getElementById('btnBatchDelete');
+            const batchDeleteCount = document.getElementById('batchDeleteCount');
+            const hiddenContainer = document.getElementById('hiddenCheckboxContainer');
+
+            if (!selectAll || !btnBatchDelete) return;
+
+            function updateBatchButton() {
+                let selectedCount = 0;
+                hiddenContainer.innerHTML = '';
+                checkboxes.forEach(cb => {
+                    if (cb.checked) {
+                        selectedCount++;
+                        const input = document.createElement('input');
+                        input.type = 'hidden';
+                        input.name = 'sale_ids[]';
+                        input.value = cb.value;
+                        hiddenContainer.appendChild(input);
+                    }
+                });
+
+                if (selectedCount > 0) {
+                    batchDeleteCount.textContent = '<?= __('delete') ?> (' + selectedCount + ')';
+                    btnBatchDelete.classList.remove('d-none');
+                } else {
+                    btnBatchDelete.classList.add('d-none');
+                }
+                
+                selectAll.checked = (selectedCount > 0 && selectedCount === checkboxes.length);
+            }
+
+            selectAll.addEventListener('change', function() {
+                checkboxes.forEach(cb => cb.checked = selectAll.checked);
+                updateBatchButton();
+            });
+
+            checkboxes.forEach(cb => {
+                cb.addEventListener('change', updateBatchButton);
+            });
+            
+            selectAll.checked = false;
+            updateBatchButton();
+        }
+
+        document.addEventListener('DOMContentLoaded', bindCheckboxes);
+    })();
 </script>
 
 <?php require_once dirname(__DIR__, 2) . '/core/layout_footer.php'; ?>

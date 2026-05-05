@@ -86,7 +86,7 @@ function getThemeCSS()
         .sidebar-nav li a { color: #475569 !important; }
         .sidebar-nav li a:hover, .sidebar-nav li a.active { color: var(--accent) !important; background: rgba(14,165,233,0.1) !important; }
         .brand-text { color: #1e293b !important; }
-        .table-dark-custom th { background: rgba(0,0,0,0.04) !important; color: #64748b !important; }
+        .table-dark-custom th { background: #f8fafc !important; color: #64748b !important; }
         .table-dark-custom td { border-bottom: 1px solid rgba(0,0,0,0.04) !important; color: #1e293b !important; }
         .form-label-dark { color: #475569 !important; }
         .form-control-dark, .form-select-dark { background: #ffffff !important; border: 1px solid #cbd5e1 !important; color: #1e293b !important; }

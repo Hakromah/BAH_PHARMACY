@@ -102,6 +102,44 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 
+    // ── Çoklu Hareket Sil ───────────────────────────────────────────
+    elseif ($action === 'delete_multiple_movements') {
+        $movementIds = $_POST['movement_ids'] ?? [];
+        if (!is_array($movementIds) || empty($movementIds)) {
+            $errors[] = __('error');
+        } else {
+            $pdo->beginTransaction();
+            try {
+                $deletedCount = 0;
+                foreach ($movementIds as $mid) {
+                    $mid = (int) $mid;
+                    $row = $pdo->prepare("SELECT * FROM stock_movements WHERE id = :id");
+                    $row->execute([':id' => $mid]);
+                    $mov = $row->fetch();
+
+                    if ($mov) {
+                        // Stok etkisini geri al
+                        $pdo->prepare("UPDATE products SET stock_quantity = stock_quantity - :q WHERE id = :id")
+                            ->execute([':q' => (int)$mov['quantity'], ':id' => $mov['product_id']]);
+
+                        $pdo->prepare("DELETE FROM stock_movements WHERE id = :id")
+                            ->execute([':id' => $mid]);
+                        $deletedCount++;
+                    }
+                }
+                $pdo->commit();
+                if ($deletedCount > 0) {
+                    setFlash('success', "{$deletedCount} " . __('success'));
+                    logAction('Stock Movement Batch Delete', "Deleted {$deletedCount} movements.");
+                }
+                redirect('movements.php');
+            } catch (Exception $ex) {
+                $pdo->rollBack();
+                $errors[] = 'Error: ' . $ex->getMessage();
+            }
+        }
+    }
+
     // ── Yeni Hareket Ekle (Manuel Giriş/Çıkış) ───────────────
     elseif ($action === 'add_movement') {
         $productId = (int) post('product_id');
@@ -337,17 +375,30 @@ require_once dirname(__DIR__, 2) . '/core/layout_header.php';
 
 <!-- ══ HAREKET TABLOSU ════════════════════════════════════════ -->
 <div class="panel">
-    <div class="panel-header">
-        <h5>
+    <div class="panel-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">
             <i class="bi bi-arrow-left-right me-2"></i>
             <?= __('stock_movements') ?>
             <span class="badge bg-secondary ms-2"><?= count($movements) ?></span>
         </h5>
+        <div class="d-flex gap-2 align-items-center">
+            <form id="batchDeleteForm" method="POST" action="movements.php" class="m-0" onsubmit="return confirm('<?= __('confirm_delete') ?? 'Are you sure you want to delete selected items?' ?>');">
+                <input type="hidden" name="csrf_token" value="<?= e($_SESSION['csrf_token']) ?>">
+                <input type="hidden" name="action" value="delete_multiple_movements">
+                <div id="hiddenCheckboxContainer"></div>
+                <button type="submit" id="btnBatchDelete" class="btn btn-danger d-none">
+                    <i class="bi bi-trash me-1"></i> <span id="batchDeleteCount">0</span>
+                </button>
+            </form>
+        </div>
     </div>
-    <div class="table-responsive">
+    <div class="table-responsive table-scrollable">
         <table class="table-dark-custom">
             <thead>
                 <tr>
+                    <th style="width:40px;">
+                        <input type="checkbox" id="selectAll" class="form-check-input">
+                    </th>
                     <th>#</th>
                     <th><?= __('date') ?></th>
                     <th><?= __('product') ?></th>
@@ -361,7 +412,7 @@ require_once dirname(__DIR__, 2) . '/core/layout_header.php';
             <tbody>
                 <?php if (empty($movements)): ?>
                     <tr>
-                        <td colspan="8" class="text-center py-5 text-muted">
+                        <td colspan="9" class="text-center py-5 text-muted">
                             <i class="bi bi-inbox" style="font-size:32px;display:block;margin-bottom:8px;"></i>
                             <?= __('no_data') ?>
                         </td>
@@ -372,6 +423,9 @@ require_once dirname(__DIR__, 2) . '/core/layout_header.php';
                         $sign = $m['quantity'] >= 0 ? '+' : '';
                     ?>
                         <tr>
+                            <td>
+                                <input type="checkbox" value="<?= $m['id'] ?>" class="form-check-input item-checkbox">
+                            </td>
                             <td style="color:var(--text-muted);"><?= $m['id'] ?></td>
                             <td style="font-size:13px;"><?= date('d.m.Y H:i', strtotime($m['created_at'])) ?></td>
                             <td><strong><?= e($m['product_name']) ?></strong></td>
@@ -749,6 +803,56 @@ function updateTgtInfo() {
         }
     });
 });
+
+(function() {
+    function bindCheckboxes() {
+        const selectAll = document.getElementById('selectAll');
+        const checkboxes = document.querySelectorAll('.item-checkbox');
+        const btnBatchDelete = document.getElementById('btnBatchDelete');
+        const batchDeleteCount = document.getElementById('batchDeleteCount');
+        const hiddenContainer = document.getElementById('hiddenCheckboxContainer');
+
+        if (!selectAll || !btnBatchDelete) return;
+
+        function updateBatchButton() {
+            let selectedCount = 0;
+            hiddenContainer.innerHTML = '';
+            checkboxes.forEach(cb => {
+                if (cb.checked) {
+                    selectedCount++;
+                    const input = document.createElement('input');
+                    input.type = 'hidden';
+                    input.name = 'movement_ids[]';
+                    input.value = cb.value;
+                    hiddenContainer.appendChild(input);
+                }
+            });
+
+            if (selectedCount > 0) {
+                batchDeleteCount.textContent = '<?= __('delete') ?> (' + selectedCount + ')';
+                btnBatchDelete.classList.remove('d-none');
+            } else {
+                btnBatchDelete.classList.add('d-none');
+            }
+            
+            selectAll.checked = (selectedCount > 0 && selectedCount === checkboxes.length);
+        }
+
+        selectAll.addEventListener('change', function() {
+            checkboxes.forEach(cb => cb.checked = selectAll.checked);
+            updateBatchButton();
+        });
+
+        checkboxes.forEach(cb => {
+            cb.addEventListener('change', updateBatchButton);
+        });
+        
+        selectAll.checked = false;
+        updateBatchButton();
+    }
+
+    document.addEventListener('DOMContentLoaded', bindCheckboxes);
+})();
 </script>
 
 <?php require_once dirname(__DIR__, 2) . '/core/layout_footer.php'; ?>
