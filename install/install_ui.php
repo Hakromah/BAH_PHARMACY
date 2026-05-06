@@ -685,7 +685,7 @@
                         <div class="form-group">
                             <label>Port</label>
                             <input type="text" name="db_port" class="form-control"
-                                value="<?= htmlspecialchars($_POST['db_port'] ?? '3306') ?>">
+                                value="<?= htmlspecialchars($_POST['db_port'] ?? '3307') ?>">
                         </div>
                     </div>
                     <div class="form-group">

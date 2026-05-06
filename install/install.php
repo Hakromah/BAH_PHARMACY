@@ -142,7 +142,7 @@ function convertToMB(string $val): float
 // ═══════════════════════════════════════════════════════
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && $step === 3) {
     $db_host = trim($_POST['db_host'] ?? 'localhost');
-    $db_port = trim($_POST['db_port'] ?? '3306');
+    $db_port = trim($_POST['db_port'] ?? '3307');
     $db_name = trim($_POST['db_name'] ?? '');
     $db_user = trim($_POST['db_user'] ?? '');
     $db_pass = $_POST['db_pass'] ?? '';
