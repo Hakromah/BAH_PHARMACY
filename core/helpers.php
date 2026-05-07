@@ -248,3 +248,30 @@ function getReportTemplate(string $type, $pdo): array
         return $default;
     }
 }
+
+// -------------------------------------------------------
+// Rol Tabanlı Erişim Kontrolü (RBAC)
+// -------------------------------------------------------
+
+/**
+ * Mevcut kullanıcının ADMIN olup olmadığını kontrol eder
+ */
+function isAdmin(): bool
+{
+    if (session_status() === PHP_SESSION_NONE) {
+        session_start();
+    }
+    return isset($_SESSION['user_role']) && $_SESSION['user_role'] === 'ADMIN';
+}
+
+/**
+ * Sayfanın sadece ADMIN tarafından görülmesini sağlar, değilse yetkisiz hatası verir veya yönlendirir.
+ */
+function requireAdmin(): void
+{
+    if (!isAdmin()) {
+        setFlash('error', __('unauthorized_access'));
+        redirect(BASE_URL . '/index.php');
+        exit;
+    }
+}

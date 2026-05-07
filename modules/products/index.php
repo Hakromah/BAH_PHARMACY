@@ -192,7 +192,8 @@ require_once dirname(__DIR__, 2) . '/core/layout_header.php';
             </span>
         </h5>
         <div class="d-flex gap-2 align-items-center">
-            <form id="batchDeleteForm" method="POST" action="delete_multiple.php" class="m-0" onsubmit="return confirm('<?= __('confirm_delete') ?? 'Are you sure you want to delete selected items?' ?>');">
+            <?php if (isAdmin()): ?>
+            <form id="batchDeleteForm" method="POST" action="delete_multiple.php" class="m-0" onsubmit="return confirm('<?= __('confirm_delete') ?>');">
                 <input type="hidden" name="csrf_token" value="<?= e($_SESSION['csrf_token']) ?>">
                 <div id="hiddenCheckboxContainer"></div>
                 <button type="submit" id="btnBatchDelete" class="btn btn-danger d-none">
@@ -204,6 +205,7 @@ require_once dirname(__DIR__, 2) . '/core/layout_header.php';
             <a href="form.php" class="btn-accent"><i class="bi bi-plus-lg"></i>
                 <?= __('add') ?>
             </a>
+            <?php endif; ?>
             <a href="<?= BASE_URL ?>/modules/products/categories.php" class="btn btn-outline-info"><i
                     class="bi bi-tags me-1"></i>
                 <?= __('categories') ?>
@@ -332,6 +334,7 @@ require_once dirname(__DIR__, 2) . '/core/layout_header.php';
                             </td>
                             <td>
                                 <div class="d-flex gap-1">
+                                    <?php if (isAdmin()): ?>
                                     <a href="form.php?id=<?= $p['id'] ?>" class="btn-sm-icon btn-edit"
                                         title="<?= __('edit') ?>">
                                         <i class="bi bi-pencil"></i>
@@ -344,6 +347,7 @@ require_once dirname(__DIR__, 2) . '/core/layout_header.php';
                                         data-confirm="<?= __('confirm_delete') ?>" title="<?= __('delete') ?>">
                                         <i class="bi bi-trash"></i>
                                     </a>
+                                    <?php endif; ?>
                                 </div>
                             </td>
                         </tr>

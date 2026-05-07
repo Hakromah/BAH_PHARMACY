@@ -4,6 +4,9 @@
  */
 require_once dirname(__DIR__, 2) . '/core/bootstrap.php';
 
+// Only ADMINs can batch-delete sales
+requireAdmin();
+
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     redirect(BASE_URL . '/modules/sales/index.php');
 }

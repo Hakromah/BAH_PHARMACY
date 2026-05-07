@@ -179,13 +179,15 @@ require_once dirname(__DIR__, 2) . '/core/layout_header.php';
             </span>
         </h5>
         <div class="d-flex gap-2 align-items-center">
-            <form id="batchDeleteForm" method="POST" action="delete_multiple.php" class="m-0" onsubmit="return confirm('<?= __('confirm_delete') ?? 'Are you sure you want to delete selected items?' ?>');">
+            <?php if (isAdmin()): ?>
+                <form id="batchDeleteForm" method="POST" action="delete_multiple.php" class="m-0" onsubmit="return confirm('<?= __('confirm_delete') ?>');">
                 <input type="hidden" name="csrf_token" value="<?= e($_SESSION['csrf_token']) ?>">
                 <div id="hiddenCheckboxContainer"></div>
                 <button type="submit" id="btnBatchDelete" class="btn btn-danger d-none">
                     <i class="bi bi-trash me-1"></i> <span id="batchDeleteCount">0</span>
                 </button>
             </form>
+            <?php endif; ?>
         </div>
     </div>
     <div class="table-responsive">
@@ -295,11 +297,13 @@ require_once dirname(__DIR__, 2) . '/core/layout_header.php';
                                         title="<?= __('print') ?>">
                                         <i class="bi bi-printer"></i>
                                     </a>
+                                    <?php if (isAdmin()): ?>
                                     <a href="delete.php?id=<?= $s['id'] ?>" class="btn-sm-icon btn-delete"
                                         data-confirm="<?= sprintf(__('cancel_sale_confirm'), $s['id']) ?>"
                                         title="<?= __('delete') ?>">
                                         <i class="bi bi-trash"></i>
                                     </a>
+                                    <?php endif; ?>
                                 </div>
                             </td>
                         </tr>

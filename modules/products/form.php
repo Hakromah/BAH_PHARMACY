@@ -5,6 +5,9 @@
 
 require_once dirname(__DIR__, 2) . '/core/bootstrap.php';
 
+// Only ADMINs can add/edit products
+requireAdmin();
+
 $pdo = Database::getInstance();
 
 $id      = (int) get('id');

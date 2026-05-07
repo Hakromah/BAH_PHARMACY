@@ -8,6 +8,9 @@
 
 require_once dirname(__DIR__, 2) . '/core/bootstrap.php';
 
+// Only ADMINs can delete products
+requireAdmin();
+
 $pdo = Database::getInstance();
 $id = (int) get('id');
 

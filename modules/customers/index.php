@@ -143,10 +143,12 @@ require_once dirname(__DIR__, 2) . '/core/layout_header.php';
                     style="display:inline-flex; align-items:center; font-weight:600; color:#000; height:38px;">
                     <i class="bi bi-calendar-check me-1"></i><?= __('receivables_list') ?>
                 </a>
+                <?php if (isAdmin()): ?>
                 <a href="form.php" class="btn-accent px-3"
                     style="display:inline-flex; align-items:center; font-weight:600; height:38px;">
                     <i class="bi bi-person-plus me-1"></i><?= __('new_customer') ?>
                 </a>
+                <?php endif; ?>
             </div>
         </form>
     </div>
@@ -257,6 +259,7 @@ require_once dirname(__DIR__, 2) . '/core/layout_header.php';
                                         style="color:var(--info);">
                                         <i class="bi bi-eye"></i>
                                     </a>
+                                    <?php if (isAdmin()): ?>
                                     <a href="form.php?id=<?= $c['id'] ?>" class="btn-sm-icon btn-edit"
                                         title="<?= __('edit') ?>">
                                         <i class="bi bi-pencil"></i>
@@ -265,6 +268,7 @@ require_once dirname(__DIR__, 2) . '/core/layout_header.php';
                                         data-confirm="<?= __('confirm_delete') ?>" title="<?= __('delete') ?>">
                                         <i class="bi bi-trash"></i>
                                     </a>
+                                    <?php endif; ?>
                                 </div>
                             </td>
                         </tr>

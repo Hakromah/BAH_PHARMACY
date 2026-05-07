@@ -213,12 +213,14 @@ $curFlag = $langMeta[$curLang]['flag'] ?? '🌐';
                                 <?= __('languages_translations') ?>
                             </a>
                         </li>
+                        <?php if (isAdmin()): ?>
                         <li>
                             <a href="<?= BASE_URL ?>/modules/settings/users.php"
                                 class="<?= (strpos($_SERVER['PHP_SELF'], 'users.php') !== false) ? 'active' : '' ?>">
                                 <?= __('user_management') ?>
                             </a>
                         </li>
+                        <?php endif; ?>
                     </ul>
                 </li>
             </ul>

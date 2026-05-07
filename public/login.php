@@ -25,6 +25,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $_SESSION['user_id'] = $user['id'];
             $_SESSION['username'] = $user['username'];
             $_SESSION['user_name'] = $user['first_name'] . ' ' . $user['last_name'];
+            $_SESSION['user_role'] = $user['role'] ?? 'USER';
             $_SESSION['user_timeout'] = $user['session_timeout'] ?: 30;
             $_SESSION['last_activity'] = time();
 

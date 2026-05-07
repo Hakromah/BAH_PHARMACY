@@ -7,6 +7,9 @@
 
 require_once dirname(__DIR__, 2) . '/core/bootstrap.php';
 
+// Only ADMINs can perform batch product deletions
+requireAdmin();
+
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     redirect(BASE_URL . '/modules/products/index.php');
 }

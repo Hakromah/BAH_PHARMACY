@@ -7,6 +7,9 @@
 
 require_once dirname(__DIR__, 2) . '/core/bootstrap.php';
 
+// Only ADMINs can cancel/delete sales
+requireAdmin();
+
 $pdo = Database::getInstance();
 $id = (int) get('id');
 
